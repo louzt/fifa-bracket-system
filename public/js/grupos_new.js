@@ -416,9 +416,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Al cargar la página, primero sincronizar datos y luego cargar los grupos
-        mostrarMensaje('info', 'Sincronizando datos de grupos...');
-        await sincronizarDatos(); // Sincronizar primero para asegurar datos actualizados
+        // Al cargar la página, primero cargar los grupos y luego sincronizar
         await cargarGrupos();
         
         // Botón de actualizar datos

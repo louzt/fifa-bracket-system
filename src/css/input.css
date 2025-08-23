@@ -22,23 +22,59 @@
     @apply relative z-10;
   }
   
+  /* Línea horizontal que sale hacia la derecha */
   .bracket-item::after {
     content: '';
-    @apply absolute right-[-20px] top-1/2 h-px w-20 bg-gamer-blue z-0 hidden md:block;
+    @apply absolute right-[-30px] top-1/2 h-[3px] w-[30px] bg-gamer-blue z-0 hidden md:block;
+    box-shadow: 0 0 8px 1px theme('colors.gamer-blue');
   }
   
+  /* Línea vertical que conecta dos partidos */
   .bracket-item::before {
     content: '';
-    @apply absolute right-[-20px] top-[calc(50%-30px)] h-[60px] w-px bg-gamer-blue z-0 hidden md:block;
+    @apply absolute right-[-30px] top-[calc(50%-40px)] h-[80px] w-[3px] bg-gamer-blue z-0 hidden md:block;
+    box-shadow: 0 0 8px 1px theme('colors.gamer-blue');
+  }
+  
+  /* Línea que conecta la clasificatoria con semifinal 2 */
+  .bracket-item.clasificatoria-item::after {
+    @apply h-[3px] w-[30px];
+    box-shadow: 0 0 8px 1px theme('colors.gamer-blue');
   }
   
   .bracket-final {
     @apply relative;
   }
   
+  /* Línea que conecta a la final */
   .bracket-final::before {
     content: '';
-    @apply absolute left-[-20px] top-1/2 h-px w-20 bg-gamer-neon z-0 hidden md:block;
+    @apply absolute left-[-30px] top-1/2 h-[3px] w-[30px] bg-gamer-neon z-0 hidden md:block;
+    box-shadow: 0 0 8px 1px theme('colors.gamer-neon');
+  }
+  
+  /* Elemento semifinal que conecta a la final */
+  .bracket-semifinal::after {
+    content: '';
+    @apply absolute right-[-30px] top-1/2 h-[3px] w-[30px] bg-gamer-neon z-0 hidden md:block;
+    box-shadow: 0 0 8px 1px theme('colors.gamer-neon');
+  }
+  
+  /* Línea vertical que conecta las semifinales con la final */
+  .bracket-semifinal::before {
+    content: '';
+    @apply absolute right-[-30px] top-[calc(50%-60px)] h-[120px] w-[3px] bg-gamer-neon z-0 hidden md:block;
+    box-shadow: 0 0 8px 1px theme('colors.gamer-neon');
+  }
+  
+  /* Estilo específico para jugadores clasificados */
+  .qualified-player {
+    @apply bg-gray-800/50 pl-2 pr-1 py-1 rounded-md border-l-4 border-gamer-blue;
+  }
+  
+  /* Etiquetas que indican de qué grupo viene cada jugador */
+  .group-tag {
+    @apply text-xs text-gamer-blue opacity-70 block -mt-1;
   }
 
   .btn-primary {

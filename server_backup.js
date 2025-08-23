@@ -4,11 +4,6 @@ const Datastore = require('nedb');
 const app = express();
 const PORT = process.env.PORT || 3003;
 
-// Función para mensajes de log
-const serverLog = (msg) => {
-  console.log(`[SERVER] ${msg}`);
-};
-
 // Bases de datos
 const jugadoresDB = new Datastore({ filename: './data/jugadores.db', autoload: true });
 const partidosDB = new Datastore({ filename: './data/partidos.db', autoload: true });
@@ -127,43 +122,91 @@ app.get('/api/partidos', (req, res) => {
 });
 
 app.post('/api/partidos', (req, res) => {
-  const partido = req.body;
-  partido.fecha = new Date();
-  
-  partidosDB.insert(partido, (err, nuevoPartido) => {
-    if (err) {
-      res.status(500).json({ error: err });
-      return;
+  try {
+    const partido = req.body;
+    
+    // Verificar que los datos del partido estén completos
+    if (!partido.jugador1 || !partido.jugador2 || 
+        !partido.jugador1._id || !partido.jugador2._id || 
+        typeof partido.golesJugador1 !== 'number' || 
+        typeof partido.golesJugador2 !== 'number') {
+      return res.status(400).json({ error: 'Datos del partido incompletos' });
     }
     
-    // Actualizar estadísticas de jugadores
-    actualizarEstadisticas(partido);
+    // Añadir fecha si no existe
+    if (!partido.fecha) {
+      partido.fecha = new Date();
+    }
     
-    // Actualizar partidos en el grupo correspondiente
-    if (partido.grupo) {
-      gruposDB.findOne({ nombre: `Grupo ${partido.grupo}` }, (err, grupo) => {
-        if (err || !grupo) {
-          console.error("Error al buscar el grupo:", err || "Grupo no encontrado");
-          res.status(201).json(nuevoPartido);
-          return;
+    // Verificar que los jugadores no sean los mismos
+    if (partido.jugador1._id === partido.jugador2._id) {
+      return res.status(400).json({ error: 'No se puede registrar un partido entre el mismo jugador' });
+    }
+    
+    // Verificar si el partido ya existe para evitar duplicados
+    partidosDB.findOne({
+      $or: [
+        { 
+          'jugador1._id': partido.jugador1._id, 
+          'jugador2._id': partido.jugador2._id,
+          'grupo': partido.grupo
+        },
+        { 
+          'jugador1._id': partido.jugador2._id, 
+          'jugador2._id': partido.jugador1._id,
+          'grupo': partido.grupo
+        }
+      ]
+    }, (err, existente) => {
+      if (err) {
+        return res.status(500).json({ error: err });
+      }
+      
+      if (existente) {
+        return res.status(400).json({ 
+          error: 'Este partido ya ha sido registrado', 
+          partido: existente 
+        });
+      }
+      
+      // Si no existe, insertar el nuevo partido
+      partidosDB.insert(partido, (err, nuevoPartido) => {
+        if (err) {
+          return res.status(500).json({ error: err });
         }
         
-        // Agregar el partido al array de partidos del grupo
-        if (!grupo.partidos) grupo.partidos = [];
-        grupo.partidos.push(nuevoPartido);
+        // Actualizar estadísticas de jugadores
+        actualizarEstadisticas(partido);
         
-        // Actualizar el grupo en la base de datos
-        gruposDB.update({ _id: grupo._id }, { $set: { partidos: grupo.partidos } }, {}, (err) => {
-          if (err) {
-            console.error("Error al actualizar partidos del grupo:", err);
-          }
+        // Actualizar partidos en el grupo correspondiente
+        if (partido.grupo) {
+          gruposDB.findOne({ nombre: `Grupo ${partido.grupo}` }, (err, grupo) => {
+            if (err || !grupo) {
+              console.error("Error al buscar el grupo:", err || "Grupo no encontrado");
+              return res.status(201).json(nuevoPartido);
+            }
+            
+            // Agregar el partido al array de partidos del grupo
+            if (!grupo.partidos) grupo.partidos = [];
+            grupo.partidos.push(nuevoPartido);
+            
+            // Actualizar el grupo en la base de datos
+            gruposDB.update({ _id: grupo._id }, { $set: { partidos: grupo.partidos } }, {}, (err) => {
+              if (err) {
+                console.error("Error al actualizar partidos del grupo:", err);
+              }
+              res.status(201).json(nuevoPartido);
+            });
+          });
+        } else {
           res.status(201).json(nuevoPartido);
-        });
+        }
       });
-    } else {
-      res.status(201).json(nuevoPartido);
-    }
-  });
+    });
+  } catch (error) {
+    console.error("Error al procesar el partido:", error);
+    res.status(500).json({ error: "Error interno al procesar el partido" });
+  }
 });
 
 // API - Grupos
@@ -216,7 +259,7 @@ app.get('/api/grupos', async (req, res) => {
   }
 });
 
-// API - Sincronizar datos de jugadores con grupos
+// API - Sincronizar datos de jugadores con grupos y partidos
 app.post('/api/grupos/sincronizar', (req, res) => {
   // Obtener todos los jugadores actualizados
   jugadoresDB.find({}).exec((err, jugadores) => {
@@ -225,45 +268,82 @@ app.post('/api/grupos/sincronizar', (req, res) => {
       return;
     }
     
-    // Obtener todos los grupos
-    gruposDB.find({}).exec((err, grupos) => {
+    // Obtener todos los partidos
+    partidosDB.find({}).exec((err, partidos) => {
       if (err) {
         res.status(500).json({ error: err });
         return;
       }
       
-      let actualizaciones = 0;
-      
-      // Para cada grupo, actualizar las estadísticas de sus jugadores
-      grupos.forEach(grupo => {
-        if (!grupo.jugadores || grupo.jugadores.length === 0) return;
-        
-        for (let i = 0; i < grupo.jugadores.length; i++) {
-          // Buscar el jugador actualizado por ID
-          const jugadorActualizado = jugadores.find(j => j._id === grupo.jugadores[i]._id);
-          
-          if (jugadorActualizado) {
-            // Actualizar estadísticas del jugador en el grupo
-            grupo.jugadores[i] = {
-              ...grupo.jugadores[i],
-              puntos: jugadorActualizado.puntos,
-              victorias: jugadorActualizado.victorias,
-              empates: jugadorActualizado.empates,
-              derrotas: jugadorActualizado.derrotas,
-              golesFavor: jugadorActualizado.golesFavor,
-              golesContra: jugadorActualizado.golesContra
-            };
-            actualizaciones++;
-          }
+      // Obtener todos los grupos
+      gruposDB.find({}).exec((err, grupos) => {
+        if (err) {
+          res.status(500).json({ error: err });
+          return;
         }
         
-        // Guardar el grupo actualizado
-        gruposDB.update({ _id: grupo._id }, { $set: { jugadores: grupo.jugadores } }, {});
-      });
-      
-      res.json({ 
-        success: true, 
-        message: `Datos sincronizados: ${actualizaciones} jugadores actualizados en grupos.` 
+        let jugadoresActualizados = 0;
+        let partidosActualizados = 0;
+        
+        // Para cada grupo, actualizar las estadísticas de sus jugadores y los partidos asociados
+        grupos.forEach(grupo => {
+          if (!grupo.jugadores || grupo.jugadores.length === 0) return;
+          
+          // 1. Actualizar estadísticas de jugadores
+          for (let i = 0; i < grupo.jugadores.length; i++) {
+            // Buscar el jugador actualizado por ID
+            const jugadorActualizado = jugadores.find(j => j._id === grupo.jugadores[i]._id);
+            
+            if (jugadorActualizado) {
+              // Actualizar estadísticas del jugador en el grupo
+              grupo.jugadores[i] = {
+                ...grupo.jugadores[i],
+                puntos: jugadorActualizado.puntos,
+                victorias: jugadorActualizado.victorias,
+                empates: jugadorActualizado.empates,
+                derrotas: jugadorActualizado.derrotas,
+                golesFavor: jugadorActualizado.golesFavor,
+                golesContra: jugadorActualizado.golesContra
+              };
+              jugadoresActualizados++;
+            }
+          }
+          
+          // 2. Actualizar partidos del grupo
+          // Extraer la letra del grupo (A, B, C, etc.)
+          const letraGrupo = grupo.nombre.replace('Grupo ', '');
+          
+          // Encontrar los partidos de este grupo
+          const partidosDelGrupo = partidos.filter(partido => partido.grupo === letraGrupo);
+          
+          // Inicializar el array de partidos si no existe
+          if (!grupo.partidos) {
+            grupo.partidos = [];
+          }
+          
+          // Reemplazar completamente los partidos del grupo
+          if (partidosDelGrupo.length > 0) {
+            grupo.partidos = partidosDelGrupo;
+            partidosActualizados += partidosDelGrupo.length;
+          }
+          
+          // Guardar el grupo actualizado con jugadores y partidos
+          gruposDB.update({ _id: grupo._id }, { 
+            $set: { 
+              jugadores: grupo.jugadores,
+              partidos: grupo.partidos 
+            } 
+          }, {});
+        });
+        
+        res.json({ 
+          success: true, 
+          message: 'Datos sincronizados correctamente', 
+          detalles: {
+            jugadoresActualizados,
+            partidosActualizados
+          }
+        });
       });
     });
   });
@@ -344,12 +424,19 @@ app.get('/api/eliminatorias', (req, res) => {
 });
 
 app.post('/api/eliminatorias/generar', (req, res) => {
-  // Lógica para generar eliminatorias basado en los resultados de los grupos
-  gruposDB.find({}).exec((err, grupos) => {
+  // Primero eliminamos cualquier eliminatoria existente
+  eliminatoriasDB.remove({}, { multi: true }, (err) => {
     if (err) {
-      res.status(500).json({ error: err });
+      res.status(500).json({ error: "Error al limpiar eliminatorias existentes: " + err });
       return;
     }
+    
+    // Lógica para generar eliminatorias basado en los resultados de los grupos
+    gruposDB.find({}).exec((err, grupos) => {
+      if (err) {
+        res.status(500).json({ error: err });
+        return;
+      }
     
     // Verificar si todos los partidos de grupo han sido jugados
     let todosPartidosJugados = true;
@@ -408,18 +495,34 @@ app.post('/api/eliminatorias/generar', (req, res) => {
       
       // Agregar los clasificados con su posición y grupo
       for (let i = 0; i < numClasificados; i++) {
+        // Para asegurar que los datos del jugador sean planos y no anidados
+        const jugadorPlano = {
+          _id: jugadoresOrdenados[i]._id,
+          nombre: jugadoresOrdenados[i].nombre,
+          equipo: jugadoresOrdenados[i].equipo,
+          puntos: jugadoresOrdenados[i].puntos || 0,
+          victorias: jugadoresOrdenados[i].victorias || 0,
+          empates: jugadoresOrdenados[i].empates || 0,
+          derrotas: jugadoresOrdenados[i].derrotas || 0,
+          golesFavor: jugadoresOrdenados[i].golesFavor || 0,
+          golesContra: jugadoresOrdenados[i].golesContra || 0,
+          grupo: grupo.nombre, // Guardar el nombre del grupo directamente en el jugador
+          posicion: i + 1 // Guardar posición directamente en el jugador para acceso más fácil
+        };
+        
         clasificados.push({
-          jugador: jugadoresOrdenados[i],
+          jugador: jugadorPlano,
           posicion: i + 1,
           grupo: grupo.nombre
         });
       }
     });
     
-    // Crear estructura de eliminatorias según la cantidad de clasificados
-    let eliminatorias = {};
+      // Imprimir información de clasificados para debug
+    console.log("Jugadores clasificados con información completa:", JSON.stringify(clasificados));
     
-    if (clasificados.length <= 2) {
+    // Crear estructura de eliminatorias según la cantidad de clasificados
+    let eliminatorias = {};    if (clasificados.length <= 2) {
       // Con 1 o 2 clasificados, directo a la final
       eliminatorias = {
         final: {
@@ -429,16 +532,21 @@ app.post('/api/eliminatorias/generar', (req, res) => {
         }
       };
     } else if (clasificados.length <= 4) {
-      // Con 3 o 4 clasificados, dos semifinales y final
+      // Con 3 o 4 clasificados, una fase clasificatoria, dos semifinales y final
       eliminatorias = {
         semifinal1: {
           jugador1: clasificados[0]?.jugador || null, 
+          jugador2: clasificados[1]?.jugador || null,
+          resultado: null
+        },
+        clasificatoria: {
+          jugador1: clasificados[2]?.jugador || null,
           jugador2: clasificados[3]?.jugador || null,
           resultado: null
         },
         semifinal2: {
-          jugador1: clasificados[1]?.jugador || null,
-          jugador2: clasificados[2]?.jugador || null,
+          jugador1: clasificados.length > 4 ? clasificados[4]?.jugador : null,
+          jugador2: null, // Ganador clasificatoria
           resultado: null
         },
         final: {
@@ -613,16 +721,38 @@ app.put('/api/eliminatorias/:fase', (req, res) => {
     
     // Si es clasificatoria o semifinal, actualizar siguiente fase
     if (fase === 'clasificatoria') {
-      const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
-        eliminatorias.clasificatoria.jugador1 : eliminatorias.clasificatoria.jugador2;
+      // Determinar ganador de la clasificatoria
+      const esGanadorJugador1 = resultado.golesJugador1 > resultado.golesJugador2;
+      
+      // Obtener el jugador ganador completo con toda su información incluyendo grupo
+      const ganador = esGanadorJugador1 ? 
+        {...eliminatorias.clasificatoria.jugador1} : {...eliminatorias.clasificatoria.jugador2};
+      
+      // Asegurarnos de que la información del grupo esté presente
+      if (!ganador.grupo) {
+        ganador.grupo = esGanadorJugador1 ? 
+          eliminatorias.clasificatoria.jugador1.grupo || 
+          eliminatorias.clasificatoria.grupo : 
+          eliminatorias.clasificatoria.jugador2.grupo || 
+          eliminatorias.clasificatoria.grupo;
+      }
+      
+      // Guardar el ganador con toda su información en la semifinal 2
       eliminatorias.semifinal2.jugador2 = ganador;
+      
     } else if (fase === 'semifinal1') {
+      // Determinar ganador de la semifinal 1
       const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
         eliminatorias.semifinal1.jugador1 : eliminatorias.semifinal1.jugador2;
+      
+      // Guardar el ganador en la final
       eliminatorias.final.jugador1 = ganador;
     } else if (fase === 'semifinal2') {
+      // Determinar ganador de la semifinal 2
       const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
         eliminatorias.semifinal2.jugador1 : eliminatorias.semifinal2.jugador2;
+      
+      // Guardar el ganador en la final
       eliminatorias.final.jugador2 = ganador;
     }
     
@@ -639,11 +769,6 @@ app.put('/api/eliminatorias/:fase', (req, res) => {
 // Funciones de utilidad
 function actualizarEstadisticas(partido) {
   const { jugador1, jugador2, golesJugador1, golesJugador2, grupo } = partido;
-  
-  if (!jugador1 || !jugador2 || !jugador1._id || !jugador2._id) {
-    console.error("Error: Datos de jugadores incompletos en el partido", partido);
-    return;
-  }
   
   // Actualizar estadísticas en la tabla de jugadores
   jugadoresDB.findOne({ _id: jugador1._id }, (err, jugador1Actual) => {
@@ -707,83 +832,6 @@ function actualizarEstadisticas(partido) {
       }
     });
   });
-}
-
-// Versión asincrónica para actualizar estadísticas
-async function actualizarEstadisticasAsync(partido) {
-  if (!partido || !partido.jugador1 || !partido.jugador2) {
-    console.error("Error: Datos de partido incompletos", partido);
-    return false;
-  }
-
-  const { jugador1, jugador2, golesJugador1, golesJugador2, grupo } = partido;
-  
-  if (!jugador1._id || !jugador2._id) {
-    console.error("Error: IDs de jugadores no encontrados", { jugador1, jugador2 });
-    return false;
-  }
-  
-  // Actualizar jugador 1
-  await new Promise((resolve, reject) => {
-    jugadoresDB.findOne({ _id: jugador1._id }, (err, jugador1Actual) => {
-      if (err || !jugador1Actual) {
-        console.error("Error actualizando estadísticas de jugador1:", err || "Jugador no encontrado", jugador1);
-        return resolve(); // Continuamos aunque haya error
-      }
-      
-      const actualizacionJugador1 = {
-        golesFavor: jugador1Actual.golesFavor + golesJugador1,
-        golesContra: jugador1Actual.golesContra + golesJugador2,
-      };
-      
-      if (golesJugador1 > golesJugador2) {
-        actualizacionJugador1.victorias = jugador1Actual.victorias + 1;
-        actualizacionJugador1.puntos = jugador1Actual.puntos + 3;
-      } else if (golesJugador1 === golesJugador2) {
-        actualizacionJugador1.empates = jugador1Actual.empates + 1;
-        actualizacionJugador1.puntos = jugador1Actual.puntos + 1;
-      } else {
-        actualizacionJugador1.derrotas = jugador1Actual.derrotas + 1;
-      }
-      
-      jugadoresDB.update({ _id: jugador1Actual._id }, { $set: actualizacionJugador1 }, {}, (err) => {
-        if (err) console.error("Error al actualizar estadísticas del jugador 1:", err);
-        resolve();
-      });
-    });
-  });
-  
-  // Actualizar jugador 2
-  await new Promise((resolve, reject) => {
-    jugadoresDB.findOne({ _id: jugador2._id }, (err, jugador2Actual) => {
-      if (err || !jugador2Actual) {
-        console.error("Error actualizando estadísticas de jugador2:", err || "Jugador no encontrado", jugador2);
-        return resolve(); // Continuamos aunque haya error
-      }
-      
-      const actualizacionJugador2 = {
-        golesFavor: jugador2Actual.golesFavor + golesJugador2,
-        golesContra: jugador2Actual.golesContra + golesJugador1,
-      };
-      
-      if (golesJugador2 > golesJugador1) {
-        actualizacionJugador2.victorias = jugador2Actual.victorias + 1;
-        actualizacionJugador2.puntos = jugador2Actual.puntos + 3;
-      } else if (golesJugador1 === golesJugador2) {
-        actualizacionJugador2.empates = jugador2Actual.empates + 1;
-        actualizacionJugador2.puntos = jugador2Actual.puntos + 1;
-      } else {
-        actualizacionJugador2.derrotas = jugador2Actual.derrotas + 1;
-      }
-      
-      jugadoresDB.update({ _id: jugador2Actual._id }, { $set: actualizacionJugador2 }, {}, (err) => {
-        if (err) console.error("Error al actualizar estadísticas del jugador 2:", err);
-        resolve();
-      });
-    });
-  });
-  
-  return true;
 }
 
 // Función para actualizar estadísticas del jugador dentro de los grupos
@@ -1116,7 +1164,7 @@ app.post('/api/sorteo/reset', (req, res) => {
   });
 });
 
-// API endpoints para administración del torneo
+// Resetear torneo (solo elimina grupos, eliminatorias y partidos)
 app.post('/api/torneo/reset', (req, res) => {
   // Primero reiniciar las estadísticas de los jugadores
   jugadoresDB.find({}, (errFind, jugadores) => {
@@ -1277,365 +1325,502 @@ app.post('/api/torneo/simular', async (req, res) => {
         });
       });
     }));
+
+    // 3. Generar grupos
+    const jugadoresAleatorios = mezclarArray([...jugadores]);
+    const totalJugadores = jugadoresAleatorios.length;
     
-    serverLog("Jugadores encontrados: " + jugadores.length);
-    serverLog("Iniciando simulación de torneo...");
+    // Determinar la estructura de grupos según el número de jugadores
+    let gruposNuevos = [];
     
-    // Resultado de la simulación para enviar al cliente
-    const resultadoSimulacion = {
-      grupos: [],
-      partidos: {
-        fase_grupos: [],
-        eliminatorias: []
-      },
-      ganador: null,
-      mensaje: ''
-    };
+    if (totalJugadores <= 6) {
+      // Hasta 6 jugadores: un solo grupo
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios, partidos: [] }
+      ];
+    } else if (totalJugadores <= 8) {
+      // 7-8 jugadores: dos grupos de tamaño similar
+      const mitad = Math.ceil(totalJugadores / 2);
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, mitad), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(mitad), partidos: [] }
+      ];
+    } else if (totalJugadores <= 12) {
+      // 9-12 jugadores: tres grupos, distribuidos de manera óptima
+      const tamañoGrupoA = Math.ceil(totalJugadores / 3);
+      const tamañoGrupoB = Math.ceil((totalJugadores - tamañoGrupoA) / 2);
+      const tamañoGrupoC = totalJugadores - tamañoGrupoA - tamañoGrupoB;
+      
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoGrupoA), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoGrupoA, tamañoGrupoA + tamañoGrupoB), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(tamañoGrupoA + tamañoGrupoB), partidos: [] }
+      ];
+    } else {
+      // 13+ jugadores: cuatro grupos
+      const tamañoPromedio = Math.ceil(totalJugadores / 4);
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoPromedio), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoPromedio, 2*tamañoPromedio), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(2*tamañoPromedio, 3*tamañoPromedio), partidos: [] },
+        { nombre: 'Grupo D', jugadores: jugadoresAleatorios.slice(3*tamañoPromedio), partidos: [] }
+      ];
+      // Eliminar grupos vacíos
+      gruposNuevos = gruposNuevos.filter(g => g.jugadores.length > 0);
+    }
     
-    // 3. Generar grupos aleatorios
-    const gruposCreados = await generarGruposAleatorios(jugadores);
-    resultadoSimulacion.grupos = gruposCreados.map(g => ({
-      nombre: g.nombre,
-      jugadores: g.jugadores.map(j => ({
-        nombre: j.nombre,
-        equipo: j.equipo,
-        puntos: j.puntos
-      }))
-    }));
+    // Guardar grupos
+    const gruposGuardados = await new Promise((resolve, reject) => {
+      gruposDB.insert(gruposNuevos, (err, docs) => {
+        if (err) reject(err);
+        else resolve(docs);
+      });
+    });
     
-    serverLog(`${gruposCreados.length} grupos generados con éxito`);
-    
-    // 4. Simular partidos de grupos (cada jugador contra cada uno en su grupo)
-    for (const grupo of gruposCreados) {
+    // 4. Simular partidos de grupos
+    const partidosSimulados = [];
+    for (const grupo of gruposGuardados) {
+      const letraGrupo = grupo.nombre.replace('Grupo ', '');
+      
+      // Generar todos los emparejamientos posibles
       for (let i = 0; i < grupo.jugadores.length; i++) {
         for (let j = i + 1; j < grupo.jugadores.length; j++) {
-          // Simular partido
-          const golesJugador1 = Math.floor(Math.random() * 5);
-          const golesJugador2 = Math.floor(Math.random() * 5);
+          // Simular resultado (entre 0 y 5 goles por jugador)
+          const golesJugador1 = Math.floor(Math.random() * 6);
+          const golesJugador2 = Math.floor(Math.random() * 6);
           
-          // Crear objeto de partido
           const partido = {
-            fecha: new Date(),
             jugador1: grupo.jugadores[i],
             jugador2: grupo.jugadores[j],
-            golesJugador1: golesJugador1,
-            golesJugador2: golesJugador2,
-            grupo: grupo.nombre.replace('Grupo ', '')
+            golesJugador1,
+            golesJugador2,
+            grupo: letraGrupo,
+            fecha: new Date()
           };
           
-          // Registrar partido
-          await new Promise((resolve, reject) => {
-            partidosDB.insert(partido, (err, nuevoPart) => {
+          // Guardar partido
+          const partidoGuardado = await new Promise((resolve, reject) => {
+            partidosDB.insert(partido, (err, doc) => {
               if (err) reject(err);
-              else resolve(nuevoPart);
+              else resolve(doc);
             });
           });
           
-          // Actualizar estadísticas
-          await actualizarEstadisticasAsync(partido);
+          partidosSimulados.push(partidoGuardado);
           
-          // Añadir a los resultados
-          resultadoSimulacion.partidos.fase_grupos.push({
-            grupo: grupo.nombre,
-            jugador1: grupo.jugadores[i].nombre,
-            jugador2: grupo.jugadores[j].nombre,
-            resultado: `${golesJugador1} - ${golesJugador2}`
-          });
+          // Actualizar estadísticas de jugadores
+          await actualizarEstadisticasAsync(partidoGuardado);
         }
       }
     }
     
-    serverLog("Partidos de grupo simulados correctamente");
-    
-    // 5. Actualizar clasificaciones de grupos
-    for (const grupo of gruposCreados) {
-      // Obtener jugadores actualizados
+    // 5. Actualizar partidos en grupos y sincronizar estadísticas
+    for (const grupo of gruposGuardados) {
+      const letraGrupo = grupo.nombre.replace('Grupo ', '');
+      const partidosGrupo = partidosSimulados.filter(p => p.grupo === letraGrupo);
+      
+      // Obtener los datos actualizados de los jugadores del grupo
       const jugadoresActualizados = await new Promise((resolve, reject) => {
-        jugadoresDB.find({ _id: { $in: grupo.jugadores.map(j => j._id) } }).exec((err, docs) => {
+        jugadoresDB.find({}, (err, allJugadores) => {
           if (err) reject(err);
-          else resolve(docs);
+          else resolve(allJugadores);
         });
       });
       
-      // Actualizar grupo
-      grupo.jugadores = jugadoresActualizados;
+      // Actualizar las estadísticas de los jugadores del grupo
+      const jugadoresGrupoActualizados = grupo.jugadores.map(jugadorGrupo => {
+        const jugadorActualizado = jugadoresActualizados.find(j => j._id === jugadorGrupo._id);
+        if (jugadorActualizado) {
+          return {
+            ...jugadorGrupo,
+            puntos: jugadorActualizado.puntos,
+            victorias: jugadorActualizado.victorias,
+            empates: jugadorActualizado.empates,
+            derrotas: jugadorActualizado.derrotas,
+            golesFavor: jugadorActualizado.golesFavor,
+            golesContra: jugadorActualizado.golesContra
+          };
+        }
+        return jugadorGrupo;
+      });
       
+      // Actualizar el grupo con sus partidos y jugadores actualizados
       await new Promise((resolve, reject) => {
-        gruposDB.update({ nombre: grupo.nombre }, grupo, {}, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
+        gruposDB.update(
+          { _id: grupo._id }, 
+          { $set: { 
+              partidos: partidosGrupo,
+              jugadores: jugadoresGrupoActualizados 
+            } 
+          }, 
+          {}, 
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
       });
     }
     
-    // 6. Generar eliminatorias según clasificación
-    // Obtener clasificados de cada grupo
+    // 6. Obtener clasificados para eliminatorias
+    const grupos = await new Promise((resolve, reject) => {
+      gruposDB.find({}).exec((err, docs) => {
+        if (err) reject(err);
+        else resolve(docs);
+      });
+    });
+    
     const clasificados = [];
     
-    for (const grupo of gruposCreados) {
+    grupos.forEach(grupo => {
       const jugadoresOrdenados = ordenarJugadoresPorPuntos(grupo.jugadores);
       
       // Determinar cuántos clasifican por grupo
       let numClasificados = 2;
-      if (gruposCreados.length === 1) {
-        numClasificados = Math.min(4, jugadoresOrdenados.length);
+      if (grupos.length === 1) {
+        numClasificados = 4; // Si es un solo grupo, clasifican 4
+      } else if (grupos.length === 2) {
+        numClasificados = 2; // Si son 2 grupos, clasifican 2 de cada grupo
+      } else if (grupos.length >= 3) {
+        numClasificados = 2; // Si son 3 o más grupos, clasifican 2 de cada grupo
       }
       
-      // Agregar los clasificados
-      for (let i = 0; i < numClasificados && i < jugadoresOrdenados.length; i++) {
+      // No podemos clasificar más jugadores de los que tiene el grupo
+      numClasificados = Math.min(numClasificados, jugadoresOrdenados.length);
+      
+      // Agregar los clasificados con su posición y grupo
+      for (let i = 0; i < numClasificados; i++) {
         clasificados.push({
           jugador: jugadoresOrdenados[i],
           posicion: i + 1,
           grupo: grupo.nombre
         });
       }
+    });
+    
+    // 7. Crear estructura de eliminatorias
+    let eliminatorias = {};
+    
+    if (clasificados.length <= 2) {
+      // Con 1 o 2 clasificados, directo a la final
+      eliminatorias = {
+        final: {
+          jugador1: clasificados[0]?.jugador || null,
+          jugador2: clasificados[1]?.jugador || null,
+          resultado: null
+        }
+      };
+    } else if (clasificados.length <= 4) {
+      // Con 3 o 4 clasificados, dos semifinales y final
+      eliminatorias = {
+        semifinal1: {
+          jugador1: clasificados[0]?.jugador || null, 
+          jugador2: clasificados[3]?.jugador || null,
+          resultado: null
+        },
+        semifinal2: {
+          jugador1: clasificados[1]?.jugador || null,
+          jugador2: clasificados[2]?.jugador || null,
+          resultado: null
+        },
+        final: {
+          jugador1: null, // Se completará después
+          jugador2: null, // Se completará después
+          resultado: null
+        }
+      };
+    } else if (clasificados.length <= 8) {
+      // Con 5-8 clasificados, cuartos, semifinales y final
+      eliminatorias = {
+        cuartos1: {
+          jugador1: clasificados[0]?.jugador || null, 
+          jugador2: clasificados[7]?.jugador || null,
+          resultado: null
+        },
+        cuartos2: {
+          jugador1: clasificados[3]?.jugador || null,
+          jugador2: clasificados[4]?.jugador || null,
+          resultado: null
+        },
+        cuartos3: {
+          jugador1: clasificados[2]?.jugador || null,
+          jugador2: clasificados[5]?.jugador || null,
+          resultado: null
+        },
+        cuartos4: {
+          jugador1: clasificados[1]?.jugador || null,
+          jugador2: clasificados[6]?.jugador || null,
+          resultado: null
+        },
+        semifinal1: {
+          jugador1: null, // Se completará después
+          jugador2: null, // Se completará después
+          resultado: null
+        },
+        semifinal2: {
+          jugador1: null, // Se completará después
+          jugador2: null, // Se completará después
+          resultado: null
+        },
+        final: {
+          jugador1: null, // Se completará después
+          jugador2: null, // Se completará después
+          resultado: null
+        }
+      };
+      
+      // Eliminar partidos con jugadores insuficientes
+      if (clasificados.length < 8) {
+        if (!clasificados[7]?.jugador) eliminatorias.cuartos1.jugador2 = clasificados[clasificados.length - 1]?.jugador || null;
+        if (clasificados.length <= 6) eliminatorias.cuartos4.jugador2 = null;
+        if (clasificados.length <= 5) eliminatorias.cuartos3.jugador2 = null;
+      }
     }
     
-    serverLog(`${clasificados.length} jugadores clasificados a eliminatorias`);
+    // Guardar estructura inicial de eliminatorias
+    const eliminatoriasGuardadas = await new Promise((resolve, reject) => {
+      eliminatoriasDB.insert(eliminatorias, (err, doc) => {
+        if (err) reject(err);
+        else resolve(doc);
+      });
+    });
     
-    // 7. Simular eliminatorias
-    let eliminatorias = crearEstructuraEliminatorias(clasificados);
+    // 8. Simular partidos de eliminatorias
+    const simularPartidoEliminatoria = (jugador1, jugador2) => {
+      if (!jugador1 || !jugador2) return { ganador: jugador1 || jugador2, golesJugador1: 0, golesJugador2: 0 };
+      
+      // Simular resultado (entre 0 y 4 goles, evitando empates)
+      let golesJugador1 = Math.floor(Math.random() * 5);
+      let golesJugador2 = Math.floor(Math.random() * 5);
+      
+      // Evitar empates en eliminatorias
+      while (golesJugador1 === golesJugador2) {
+        golesJugador1 = Math.floor(Math.random() * 5);
+        golesJugador2 = Math.floor(Math.random() * 5);
+      }
+      
+      const ganador = golesJugador1 > golesJugador2 ? jugador1 : jugador2;
+      return { ganador, golesJugador1, golesJugador2 };
+    };
     
-    // Guardar estructura de eliminatorias
+    // Copia de eliminatorias para ir actualizando
+    const eliminatoriasActualizadas = {...eliminatoriasGuardadas};
+    
+    // Simular semifinales si es necesario
+    if (eliminatoriasActualizadas.semifinal1 && eliminatoriasActualizadas.semifinal1.jugador1 && eliminatoriasActualizadas.semifinal1.jugador2) {
+      const resultadoSemi1 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.semifinal1.jugador1,
+        eliminatoriasActualizadas.semifinal1.jugador2
+      );
+      
+      eliminatoriasActualizadas.semifinal1.resultado = {
+        golesJugador1: resultadoSemi1.golesJugador1,
+        golesJugador2: resultadoSemi1.golesJugador2
+      };
+      
+      eliminatoriasActualizadas.final.jugador1 = resultadoSemi1.ganador;
+    }
+    
+    if (eliminatoriasActualizadas.semifinal2 && eliminatoriasActualizadas.semifinal2.jugador1 && eliminatoriasActualizadas.semifinal2.jugador2) {
+      const resultadoSemi2 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.semifinal2.jugador1,
+        eliminatoriasActualizadas.semifinal2.jugador2
+      );
+      
+      eliminatoriasActualizadas.semifinal2.resultado = {
+        golesJugador1: resultadoSemi2.golesJugador1,
+        golesJugador2: resultadoSemi2.golesJugador2
+      };
+      
+      eliminatoriasActualizadas.final.jugador2 = resultadoSemi2.ganador;
+    }
+    
+    // Simular cuartos si es necesario
+    if (eliminatoriasActualizadas.cuartos1 && eliminatoriasActualizadas.cuartos1.jugador1 && eliminatoriasActualizadas.cuartos1.jugador2) {
+      const resultadoCuartos1 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.cuartos1.jugador1,
+        eliminatoriasActualizadas.cuartos1.jugador2
+      );
+      
+      eliminatoriasActualizadas.cuartos1.resultado = {
+        golesJugador1: resultadoCuartos1.golesJugador1,
+        golesJugador2: resultadoCuartos1.golesJugador2
+      };
+      
+      if (!eliminatoriasActualizadas.semifinal1.jugador1) {
+        eliminatoriasActualizadas.semifinal1.jugador1 = resultadoCuartos1.ganador;
+      }
+    }
+    
+    if (eliminatoriasActualizadas.cuartos2 && eliminatoriasActualizadas.cuartos2.jugador1 && eliminatoriasActualizadas.cuartos2.jugador2) {
+      const resultadoCuartos2 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.cuartos2.jugador1,
+        eliminatoriasActualizadas.cuartos2.jugador2
+      );
+      
+      eliminatoriasActualizadas.cuartos2.resultado = {
+        golesJugador1: resultadoCuartos2.golesJugador1,
+        golesJugador2: resultadoCuartos2.golesJugador2
+      };
+      
+      if (!eliminatoriasActualizadas.semifinal1.jugador2) {
+        eliminatoriasActualizadas.semifinal1.jugador2 = resultadoCuartos2.ganador;
+      }
+    }
+    
+    if (eliminatoriasActualizadas.cuartos3 && eliminatoriasActualizadas.cuartos3.jugador1 && eliminatoriasActualizadas.cuartos3.jugador2) {
+      const resultadoCuartos3 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.cuartos3.jugador1,
+        eliminatoriasActualizadas.cuartos3.jugador2
+      );
+      
+      eliminatoriasActualizadas.cuartos3.resultado = {
+        golesJugador1: resultadoCuartos3.golesJugador1,
+        golesJugador2: resultadoCuartos3.golesJugador2
+      };
+      
+      if (!eliminatoriasActualizadas.semifinal2.jugador1) {
+        eliminatoriasActualizadas.semifinal2.jugador1 = resultadoCuartos3.ganador;
+      }
+    }
+    
+    if (eliminatoriasActualizadas.cuartos4 && eliminatoriasActualizadas.cuartos4.jugador1 && eliminatoriasActualizadas.cuartos4.jugador2) {
+      const resultadoCuartos4 = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.cuartos4.jugador1,
+        eliminatoriasActualizadas.cuartos4.jugador2
+      );
+      
+      eliminatoriasActualizadas.cuartos4.resultado = {
+        golesJugador1: resultadoCuartos4.golesJugador1,
+        golesJugador2: resultadoCuartos4.golesJugador2
+      };
+      
+      if (!eliminatoriasActualizadas.semifinal2.jugador2) {
+        eliminatoriasActualizadas.semifinal2.jugador2 = resultadoCuartos4.ganador;
+      }
+    }
+    
+    // Simular la final
+    if (eliminatoriasActualizadas.final.jugador1 && eliminatoriasActualizadas.final.jugador2) {
+      const resultadoFinal = simularPartidoEliminatoria(
+        eliminatoriasActualizadas.final.jugador1,
+        eliminatoriasActualizadas.final.jugador2
+      );
+      
+      eliminatoriasActualizadas.final.resultado = {
+        golesJugador1: resultadoFinal.golesJugador1,
+        golesJugador2: resultadoFinal.golesJugador2
+      };
+      
+      eliminatoriasActualizadas.campeon = resultadoFinal.ganador;
+    }
+    
+    // Actualizar eliminatorias con resultados
     await new Promise((resolve, reject) => {
-      eliminatoriasDB.insert(eliminatorias, (err) => {
+      eliminatoriasDB.update({ _id: eliminatoriasGuardadas._id }, eliminatoriasActualizadas, {}, (err) => {
         if (err) reject(err);
         else resolve();
       });
     });
     
-    // 8. Simular partidos de eliminatorias
-    const ganador = await simularPartidosEliminatorias(eliminatorias);
-    
-    resultadoSimulacion.ganador = {
-      nombre: ganador.nombre,
-      equipo: ganador.equipo
-    };
-    
-    resultadoSimulacion.mensaje = `¡Torneo simulado con éxito! ${ganador.nombre} es el campeón.`;
-    
-    res.json(resultadoSimulacion);
-    
+    // 9. Devolver resumen del torneo simulado
+    res.json({ 
+      success: true,
+      message: 'Torneo simulado correctamente',
+      gruposCreados: grupos.length,
+      partidosSimulados: partidosSimulados.length,
+      totalJugadores: jugadores.length,
+      eliminatoriasCreadas: Object.keys(eliminatoriasActualizadas).length - 1, // Restamos 1 por el id
+      campeon: eliminatoriasActualizadas.campeon?.nombre || 'No determinado'
+    });
   } catch (error) {
-    console.error("Error en la simulación del torneo:", error);
+    console.error('Error al simular torneo:', error);
     res.status(500).json({ 
-      error: error.message || error, 
-      mensaje: "Error al simular el torneo" 
+      error: error.message || 'Error al simular torneo', 
+      message: 'Ocurrió un error durante la simulación del torneo' 
     });
   }
 });
 
-// Función auxiliar para generar grupos aleatorios
-async function generarGruposAleatorios(jugadores) {
-  const jugadoresAleatorios = mezclarArray([...jugadores]);
-  const totalJugadores = jugadoresAleatorios.length;
-  
-  // Determinar la estructura de grupos según el número de jugadores
-  let gruposNuevos = [];
-  
-  if (totalJugadores <= 6) {
-    // Hasta 6 jugadores: un solo grupo
-    gruposNuevos = [
-      { nombre: 'Grupo A', jugadores: jugadoresAleatorios, partidos: [] }
-    ];
-  } else if (totalJugadores <= 8) {
-    // 7-8 jugadores: dos grupos de tamaño similar
-    const mitad = Math.ceil(totalJugadores / 2);
-    gruposNuevos = [
-      { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, mitad), partidos: [] },
-      { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(mitad), partidos: [] }
-    ];
-  } else if (totalJugadores <= 12) {
-    // 9-12 jugadores: tres grupos
-    const tamañoGrupoA = Math.ceil(totalJugadores / 3);
-    const tamañoGrupoB = Math.ceil((totalJugadores - tamañoGrupoA) / 2);
-    const tamañoGrupoC = totalJugadores - tamañoGrupoA - tamañoGrupoB;
-    
-    gruposNuevos = [
-      { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoGrupoA), partidos: [] },
-      { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoGrupoA, tamañoGrupoA + tamañoGrupoB), partidos: [] },
-      { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(tamañoGrupoA + tamañoGrupoB), partidos: [] }
-    ];
-  } else {
-    // 13+ jugadores: cuatro grupos
-    const tamañoPromedio = Math.ceil(totalJugadores / 4);
-    gruposNuevos = [
-      { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoPromedio), partidos: [] },
-      { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoPromedio, 2*tamañoPromedio), partidos: [] },
-      { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(2*tamañoPromedio, 3*tamañoPromedio), partidos: [] },
-      { nombre: 'Grupo D', jugadores: jugadoresAleatorios.slice(3*tamañoPromedio), partidos: [] }
-    ];
-    // Eliminar grupos vacíos
-    gruposNuevos = gruposNuevos.filter(g => g.jugadores.length > 0);
+// Función asíncrona para actualizar estadísticas
+async function actualizarEstadisticasAsync(partido) {
+  if (!partido || !partido.jugador1 || !partido.jugador2) {
+    console.error("Error: Datos de partido incompletos", partido);
+    return false;
   }
-  
-  // Guardar grupos en la base de datos
-  return new Promise((resolve, reject) => {
-    gruposDB.insert(gruposNuevos, (err, nuevosGrupos) => {
-      if (err) reject(err);
-      else resolve(nuevosGrupos);
-    });
-  });
-}
 
-// Función para crear la estructura de eliminatorias según los clasificados
-function crearEstructuraEliminatorias(clasificados) {
-  let eliminatorias = {};
+  const { jugador1, jugador2, golesJugador1, golesJugador2, grupo } = partido;
   
-  if (clasificados.length <= 2) {
-    // Con 1 o 2 clasificados, directo a la final
-    eliminatorias = {
-      final: {
-        jugador1: clasificados[0]?.jugador || null,
-        jugador2: clasificados[1]?.jugador || null,
-        resultado: null
-      }
-    };
-  } else if (clasificados.length <= 4) {
-    // Con 3 o 4 clasificados, dos semifinales y final
-    eliminatorias = {
-      semifinal1: {
-        jugador1: clasificados[0]?.jugador || null, 
-        jugador2: clasificados[3]?.jugador || null,
-        resultado: null
-      },
-      semifinal2: {
-        jugador1: clasificados[1]?.jugador || null,
-        jugador2: clasificados[2]?.jugador || null,
-        resultado: null
-      },
-      final: {
-        jugador1: null, // Ganador semifinal1
-        jugador2: null, // Ganador semifinal2
-        resultado: null
-      }
-    };
-  } else {
-    // Implementación para más clasificados (cuartos, etc.)
-    // Código simplificado para el ejemplo
-    eliminatorias = {
-      cuartos1: { jugador1: clasificados[0]?.jugador, jugador2: clasificados[7]?.jugador, resultado: null },
-      cuartos2: { jugador1: clasificados[3]?.jugador, jugador2: clasificados[4]?.jugador, resultado: null },
-      cuartos3: { jugador1: clasificados[2]?.jugador, jugador2: clasificados[5]?.jugador, resultado: null },
-      cuartos4: { jugador1: clasificados[1]?.jugador, jugador2: clasificados[6]?.jugador, resultado: null },
-      semifinal1: { jugador1: null, jugador2: null, resultado: null },
-      semifinal2: { jugador1: null, jugador2: null, resultado: null },
-      final: { jugador1: null, jugador2: null, resultado: null }
-    };
+  if (!jugador1._id || !jugador2._id) {
+    console.error("Error: IDs de jugadores no encontrados", { jugador1, jugador2 });
+    return false;
   }
   
-  return eliminatorias;
-}
-
-// Función para simular partidos de eliminatorias
-async function simularPartidosEliminatorias(eliminatorias) {
-  // Simular cuartos si existen
-  if (eliminatorias.cuartos1) {
-    // Simular cuartos1
-    if (eliminatorias.cuartos1.jugador1 && eliminatorias.cuartos1.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.cuartos1.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.semifinal1.jugador1 = golesJ1 > golesJ2 ? eliminatorias.cuartos1.jugador1 : eliminatorias.cuartos1.jugador2;
-    }
-    
-    // Simular cuartos2
-    if (eliminatorias.cuartos2.jugador1 && eliminatorias.cuartos2.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.cuartos2.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.semifinal1.jugador2 = golesJ1 > golesJ2 ? eliminatorias.cuartos2.jugador1 : eliminatorias.cuartos2.jugador2;
-    }
-    
-    // Simular cuartos3
-    if (eliminatorias.cuartos3.jugador1 && eliminatorias.cuartos3.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.cuartos3.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.semifinal2.jugador1 = golesJ1 > golesJ2 ? eliminatorias.cuartos3.jugador1 : eliminatorias.cuartos3.jugador2;
-    }
-    
-    // Simular cuartos4
-    if (eliminatorias.cuartos4.jugador1 && eliminatorias.cuartos4.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.cuartos4.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.semifinal2.jugador2 = golesJ1 > golesJ2 ? eliminatorias.cuartos4.jugador1 : eliminatorias.cuartos4.jugador2;
-    }
-  }
-  
-  // Simular semifinales
-  if (eliminatorias.semifinal1) {
-    // Semifinal 1
-    if (eliminatorias.semifinal1.jugador1 && eliminatorias.semifinal1.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.semifinal1.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.final.jugador1 = golesJ1 > golesJ2 ? eliminatorias.semifinal1.jugador1 : eliminatorias.semifinal1.jugador2;
-    }
-    
-    // Semifinal 2
-    if (eliminatorias.semifinal2?.jugador1 && eliminatorias.semifinal2?.jugador2) {
-      const golesJ1 = Math.floor(Math.random() * 5);
-      const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-      eliminatorias.semifinal2.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-      eliminatorias.final.jugador2 = golesJ1 > golesJ2 ? eliminatorias.semifinal2.jugador1 : eliminatorias.semifinal2.jugador2;
-    }
-  }
-  
-  // Simular final
-  let ganador = null;
-  
-  if (eliminatorias.final.jugador1 && eliminatorias.final.jugador2) {
-    const golesJ1 = Math.floor(Math.random() * 5);
-    const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
-    eliminatorias.final.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
-    ganador = golesJ1 > golesJ2 ? eliminatorias.final.jugador1 : eliminatorias.final.jugador2;
-  } else if (eliminatorias.final.jugador1) {
-    ganador = eliminatorias.final.jugador1;
-  } else if (eliminatorias.final.jugador2) {
-    ganador = eliminatorias.final.jugador2;
-  }
-  
-  // Actualizar eliminatorias en la base de datos
+  // Actualizar jugador 1
   await new Promise((resolve, reject) => {
-    eliminatoriasDB.update({}, eliminatorias, {}, (err) => {
-      if (err) reject(err);
-      else resolve();
+    jugadoresDB.findOne({ _id: jugador1._id }, (err, jugador1Actual) => {
+      if (err || !jugador1Actual) {
+        console.error("Error actualizando estadísticas de jugador1:", err || "Jugador no encontrado", jugador1);
+        return resolve(); // Continuamos aunque haya error
+      }
+      
+      const actualizacionJugador1 = {
+        golesFavor: jugador1Actual.golesFavor + golesJugador1,
+        golesContra: jugador1Actual.golesContra + golesJugador2,
+      };
+      
+      if (golesJugador1 > golesJugador2) {
+        actualizacionJugador1.victorias = jugador1Actual.victorias + 1;
+        actualizacionJugador1.puntos = jugador1Actual.puntos + 3;
+      } else if (golesJugador1 === golesJugador2) {
+        actualizacionJugador1.empates = jugador1Actual.empates + 1;
+        actualizacionJugador1.puntos = jugador1Actual.puntos + 1;
+      } else {
+        actualizacionJugador1.derrotas = jugador1Actual.derrotas + 1;
+      }
+      
+      jugadoresDB.update({ _id: jugador1Actual._id }, { $set: actualizacionJugador1 }, {}, (err) => {
+        if (err) console.error("Error al actualizar estadísticas del jugador 1:", err);
+        resolve();
+      });
     });
   });
   
-  return ganador;
-}
-
-// API endpoint para verificar el estado del servidor
-app.get('/api/status', (req, res) => {
-  res.json({
-    status: "ok",
-    message: "El servidor está funcionando correctamente",
-    time: new Date().toISOString()
+  // Actualizar jugador 2
+  await new Promise((resolve, reject) => {
+    jugadoresDB.findOne({ _id: jugador2._id }, (err, jugador2Actual) => {
+      if (err || !jugador2Actual) {
+        console.error("Error actualizando estadísticas de jugador2:", err || "Jugador no encontrado", jugador2);
+        return resolve(); // Continuamos aunque haya error
+      }
+      
+      const actualizacionJugador2 = {
+        golesFavor: jugador2Actual.golesFavor + golesJugador2,
+        golesContra: jugador2Actual.golesContra + golesJugador1
+      };
+      
+      if (golesJugador2 > golesJugador1) {
+        actualizacionJugador2.victorias = jugador2Actual.victorias + 1;
+        actualizacionJugador2.puntos = jugador2Actual.puntos + 3;
+      } else if (golesJugador1 === golesJugador2) {
+        actualizacionJugador2.empates = jugador2Actual.empates + 1;
+        actualizacionJugador2.puntos = jugador2Actual.puntos + 1;
+      } else {
+        actualizacionJugador2.derrotas = jugador2Actual.derrotas + 1;
+      }
+      
+      jugadoresDB.update({ _id: jugador2Actual._id }, { $set: actualizacionJugador2 }, {}, (err) => {
+        if (err) console.error("Error al actualizar estadísticas del jugador 2:", err);
+        resolve();
+      });
+    });
   });
-});
-
-// Inicia el servidor directamente
-console.log('=== Iniciando servidor Xtreame 2025 ===');
+  
+  return true;
+}
 
 // Iniciar el servidor
-const server = app.listen(PORT, () => {
-  console.log(`¡Servidor iniciado correctamente!`);
+app.listen(PORT, () => {
   console.log(`Servidor en funcionamiento en http://localhost:${PORT}`);
   console.log(`Servidor Xtreame 2025 ejecutándose en http://localhost:${PORT}`);
-  console.log('¡Ahora puedes acceder a la aplicación en tu navegador!');
-  console.log('===========================================');
-});
-
-// Manejo de errores de inicio del servidor
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`Error: El puerto ${PORT} ya está en uso.`);
-    console.error('Cierra cualquier otro servidor o aplicación que pueda estar usando este puerto.');
-  } else {
-    console.error('Error al iniciar el servidor:', error);
-  }
-  process.exit(1);
 });

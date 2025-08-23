@@ -81,11 +81,17 @@ async function cargarJugadores() {
         const tr = document.createElement('tr');
         const partidosJugados = jugador.victorias + jugador.empates + jugador.derrotas;
         
+        // Determinar qué mostrar en la celda de equipo
+        let equipoDisplay = jugador.equipo;
+        if (!equipoDisplay || equipoDisplay === 'null' || equipoDisplay === 'undefined') {
+            equipoDisplay = '<span class="text-gray-400 italic">Sin equipo</span>';
+        }
+        
         tr.innerHTML = `
             <td class="table-cell"><span class="nombre-jugador">${jugador.nombre}</span></td>
-            <td class="table-cell">${jugador.equipo}</td>
-            <td class="table-cell font-bold">${jugador.puntos}</td>
-            <td class="table-cell">${partidosJugados}</td>
+            <td class="table-cell">${equipoDisplay}</td>
+            <td class="table-cell font-bold">${jugador.puntos || 0}</td>
+            <td class="table-cell">${partidosJugados || 0}</td>
             <td class="table-cell">
                 <button class="text-blue-400 hover:text-blue-200 mr-2 editar-jugador" data-id="${jugador._id}">
                     <i class="fas fa-edit"></i>
@@ -133,23 +139,105 @@ function actualizarSelectoresJugadores(jugadores) {
 async function guardarJugador(e) {
     e.preventDefault();
     
-    const nombre = document.getElementById('nombre').value;
-    const equipo = document.getElementById('equipo').value;
+    const nombre = document.getElementById('nombre').value.trim();
+    const equipo = document.getElementById('equipo').value.trim();
     
-    const jugador = { nombre, equipo };
+    // Validar que el nombre no esté vacío
+    if (!nombre) {
+        mostrarMensaje('error', 'El nombre del jugador es obligatorio');
+        return;
+    }
     
-    const jugadorGuardado = await fetchAPI('/api/jugadores', 'POST', jugador);
-    if (jugadorGuardado) {
-        mostrarMensaje('success', 'Jugador guardado correctamente');
-        jugadorForm.reset();
-        formAgregarJugador.classList.add('hidden');
-        cargarJugadores();
+    // Crear objeto jugador (equipo puede estar vacío)
+    const jugador = { 
+        nombre,
+        equipo: equipo || null // Si está vacío, establecer como null explícitamente
+    };
+    
+    try {
+        const jugadorGuardado = await fetchAPI('/api/jugadores', 'POST', jugador);
+        if (jugadorGuardado) {
+            mostrarMensaje('success', 'Jugador guardado correctamente');
+            jugadorForm.reset();
+            formAgregarJugador.classList.add('hidden');
+            cargarJugadores();
+        }
+    } catch (error) {
+        console.error('Error al guardar jugador:', error);
+        mostrarMensaje('error', 'Error al guardar el jugador');
     }
 }
 
-function editarJugador(id) {
-    // Esta función se implementará después
-    console.log('Editar jugador', id);
+async function editarJugador(id) {
+    try {
+        // Obtener datos del jugador
+        const jugador = await fetchAPI(`/api/jugadores/${id}`);
+        if (!jugador) {
+            mostrarMensaje('error', 'Error al obtener los datos del jugador');
+            return;
+        }
+
+        // Obtener los equipos para el selector
+        let equipos = await fetchAPI('/api/equipos');
+        if (!Array.isArray(equipos)) {
+            equipos = equiposFIFA || []; // Usar la variable global si está disponible
+        }
+
+        // Mostrar el modal
+        const modalEditarJugador = document.getElementById('modalEditarJugador');
+        const formEditarJugador = document.getElementById('formEditarJugador');
+        const editarJugadorId = document.getElementById('editarJugadorId');
+        const editarNombre = document.getElementById('editarNombre');
+        const editarEquipo = document.getElementById('editarEquipo');
+        const btnCancelarEdicion = document.getElementById('btnCancelarEdicion');
+
+        // Llenar el selector de equipos
+        editarEquipo.innerHTML = '<option value="">Sin equipo</option>';
+        equipos.forEach(equipo => {
+            const option = document.createElement('option');
+            option.value = equipo.nombre;
+            option.textContent = equipo.nombre;
+            if (jugador.equipo === equipo.nombre) {
+                option.selected = true;
+            }
+            editarEquipo.appendChild(option);
+        });
+
+        // Llenar el formulario con los datos actuales
+        editarJugadorId.value = id;
+        editarNombre.value = jugador.nombre || '';
+
+        // Mostrar el modal
+        modalEditarJugador.classList.remove('hidden');
+
+        // Manejar el envío del formulario
+        formEditarJugador.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const datosActualizados = {
+                nombre: editarNombre.value,
+                equipo: editarEquipo.value || null
+            };
+            
+            const resultado = await fetchAPI(`/api/jugadores/${id}`, 'PUT', datosActualizados);
+            
+            if (resultado && resultado.success) {
+                mostrarMensaje('success', 'Jugador actualizado correctamente');
+                modalEditarJugador.classList.add('hidden');
+                cargarJugadores(); // Recargar la tabla de jugadores
+            } else {
+                mostrarMensaje('error', 'Error al actualizar el jugador');
+            }
+        };
+
+        // Manejar el botón de cancelar
+        btnCancelarEdicion.onclick = () => {
+            modalEditarJugador.classList.add('hidden');
+        };
+    } catch (error) {
+        console.error('Error al editar jugador:', error);
+        mostrarMensaje('error', 'Error al procesar la solicitud');
+    }
 }
 
 function confirmarEliminarJugador(id) {
@@ -315,20 +403,100 @@ async function generarEliminatorias() {
 
 function confirmarResetearTorneo() {
     modalTitulo.textContent = 'Resetear Torneo';
-    modalMensaje.textContent = '¿Estás seguro de que deseas resetear el torneo? Esto eliminará todos los datos de grupos, eliminatorias y resultados.';
+    modalMensaje.textContent = '¿Estás seguro de que deseas resetear el torneo? Esto eliminará todos los datos de grupos, eliminatorias y resultados. Los jugadores se mantendrán intactos.';
     modalConfirmacion.classList.remove('hidden');
     
-    btnConfirmarModal.onclick = () => {
-        // Esta función se implementará después
-        console.log('Resetear torneo');
-        modalConfirmacion.classList.add('hidden');
+    btnConfirmarModal.onclick = async () => {
+        try {
+            const resultado = await fetchAPI('/api/torneo/reset', 'POST');
+            if (resultado && resultado.success) {
+                mostrarMensaje('success', resultado.message || 'Torneo reseteado correctamente');
+                
+                // Recargar la página después de un breve delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                mostrarMensaje('error', 'Error al resetear el torneo');
+            }
+        } catch (error) {
+            console.error('Error al resetear torneo:', error);
+            mostrarMensaje('error', 'Error al resetear el torneo: ' + (error.message || 'Error desconocido'));
+        } finally {
+            modalConfirmacion.classList.add('hidden');
+        }
+    };
+}
+
+function confirmarResetearCompleto() {
+    modalTitulo.textContent = 'Reinicio Completo';
+    modalMensaje.textContent = '¡ATENCIÓN! Esto eliminará TODOS los datos: jugadores, grupos, eliminatorias, resultados y sorteos. Esta acción no se puede deshacer.';
+    modalConfirmacion.classList.remove('hidden');
+    
+    btnConfirmarModal.onclick = async () => {
+        try {
+            const resultado = await fetchAPI('/api/torneo/reset-completo', 'POST');
+            if (resultado && resultado.success) {
+                mostrarMensaje('success', resultado.message || 'Reinicio completo exitoso');
+                
+                // Recargar la página después de un breve delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                mostrarMensaje('error', 'Error al realizar reinicio completo');
+            }
+        } catch (error) {
+            console.error('Error al reiniciar completamente:', error);
+            mostrarMensaje('error', 'Error al reiniciar completamente: ' + (error.message || 'Error desconocido'));
+        } finally {
+            modalConfirmacion.classList.add('hidden');
+        }
+    };
+}
+
+function confirmarSimularTorneo() {
+    modalTitulo.textContent = 'Simular Torneo Completo';
+    modalMensaje.textContent = '¿Estás seguro de que deseas simular un torneo completo? Esto reseteará el torneo actual y generará automáticamente grupos, partidos y eliminatorias con resultados aleatorios.';
+    modalConfirmacion.classList.remove('hidden');
+    
+    btnConfirmarModal.onclick = async () => {
+        try {
+            // Mostrar mensaje de carga
+            mostrarMensaje('success', 'Simulando torneo, por favor espera...');
+            
+            const resultado = await fetchAPI('/api/torneo/simular', 'POST');
+            if (resultado && resultado.success) {
+                mostrarMensajeHTML('success', `<b>Torneo simulado correctamente</b><br>
+                    Se han creado ${resultado.gruposCreados || 'varios'} grupos y se han simulado 
+                    ${resultado.partidosSimulados || 'múltiples'} partidos`);
+                
+                // Recargar la página después de un breve delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2500);
+            } else {
+                mostrarMensaje('error', resultado?.error || 'Error al simular el torneo');
+            }
+        } catch (error) {
+            console.error('Error al simular torneo:', error);
+            mostrarMensaje('error', 'Error al simular torneo: ' + (error.message || 'Error desconocido'));
+        } finally {
+            modalConfirmacion.classList.add('hidden');
+        }
     };
 }
 
 // Función para cargar partidos pendientes
 async function cargarPartidosPendientes() {
     const partidosPendientesDiv = document.getElementById('partidosPendientes');
-    if (!partidosPendientesDiv) return;
+    if (!partidosPendientesDiv) {
+        console.log('No se encontró el elemento #partidosPendientes');
+        return;
+    }
+    
+    // Mensaje de carga inicial
+    partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">Cargando partidos pendientes...</p>';
     
     try {
         // Obtener los grupos
@@ -345,28 +513,55 @@ async function cargarPartidosPendientes() {
         }
         
         // Obtener todos los jugadores para tener datos actualizados
-        const jugadores = await fetchAPI('/api/jugadores');
-        if (!jugadores) {
-            console.error('Error al cargar jugadores: jugadores es null o undefined');
-            partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">Error al cargar datos de jugadores</p>';
-            return;
-        }
-        
-        if (jugadores.length === 0) {
-            partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">No hay jugadores registrados</p>';
+        let jugadores;
+        try {
+            jugadores = await fetchAPI('/api/jugadores');
+            if (!jugadores) {
+                console.error('Error al cargar jugadores: jugadores es null o undefined');
+                partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">Error al cargar datos de jugadores</p>';
+                return;
+            }
+            
+            if (!Array.isArray(jugadores)) {
+                console.error('Error: jugadores no es un array', jugadores);
+                partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">Error en formato de datos de jugadores</p>';
+                return;
+            }
+            
+            if (jugadores.length === 0) {
+                partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">No hay jugadores registrados</p>';
+                return;
+            }
+        } catch (err) {
+            console.error('Error al procesar jugadores:', err);
+            partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-red-400">Error al procesar datos de jugadores</p>';
             return;
         }
         
         // Crear lista de partidos pendientes
         let partidosPendientes = [];
         
+        // Verificación adicional de grupos
+        if (!Array.isArray(grupos)) {
+            console.error('Error: grupos no es un array', grupos);
+            partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-red-400">Error en el formato de los grupos</p>';
+            return;
+        }
+        
         grupos.forEach(grupo => {
+            // Verificar que el grupo tenga la estructura correcta
+            if (!grupo || !grupo.nombre) {
+                console.error('Grupo sin nombre o inválido:', grupo);
+                return;
+            }
+            
             if (!grupo.jugadores || !Array.isArray(grupo.jugadores)) {
                 console.error(`Grupo "${grupo.nombre}" no tiene jugadores o jugadores no es un array`);
                 return;
             }
             
-            const jugadoresGrupo = grupo.jugadores;
+            // Filtrar jugadores nulos o indefinidos
+            const jugadoresGrupo = grupo.jugadores.filter(jugador => jugador && typeof jugador === 'object');
             
             if (jugadoresGrupo.length < 2) {
                 console.log(`Grupo "${grupo.nombre}" tiene menos de 2 jugadores, se omite`);
@@ -376,24 +571,68 @@ async function cargarPartidosPendientes() {
             // Crear todas las combinaciones posibles de partidos
             for (let i = 0; i < jugadoresGrupo.length; i++) {
                 for (let j = i + 1; j < jugadoresGrupo.length; j++) {
-                    if (!jugadoresGrupo[i]._id || !jugadoresGrupo[j]._id) {
-                        console.error('Jugador sin ID en grupo:', grupo.nombre);
+                    // Verificación exhaustiva de IDs de jugador
+                    const jugador1 = jugadoresGrupo[i];
+                    const jugador2 = jugadoresGrupo[j];
+                    
+                    if (!jugador1 || !jugador1._id || !jugador2 || !jugador2._id) {
+                        console.error('Jugador sin ID en grupo:', grupo.nombre, 
+                                     'Jugador 1:', jugador1, 
+                                     'Jugador 2:', jugador2);
                         continue;
                     }
                     
-                    const partidoJugado = grupo.partidos && Array.isArray(grupo.partidos) && grupo.partidos.some(partido => 
-                        (partido.jugador1 && partido.jugador2) &&
-                        ((partido.jugador1._id === jugadoresGrupo[i]._id && partido.jugador2._id === jugadoresGrupo[j]._id) || 
-                        (partido.jugador1._id === jugadoresGrupo[j]._id && partido.jugador2._id === jugadoresGrupo[i]._id))
-                    );
+                    let partidoJugado = false;
+                    
+                    // Verificar si el partido ya se jugó
+                    if (grupo.partidos && Array.isArray(grupo.partidos)) {
+                        const id1 = jugador1._id;
+                        const id2 = jugador2._id;
+                        
+                        partidoJugado = grupo.partidos.some(partido => {
+                            // Verificación exhaustiva para evitar errores
+                            return partido && 
+                                   partido.jugador1 && partido.jugador1._id && 
+                                   partido.jugador2 && partido.jugador2._id &&
+                                  ((partido.jugador1._id === id1 && partido.jugador2._id === id2) || 
+                                   (partido.jugador1._id === id2 && partido.jugador2._id === id1));
+                        });
+                    }
                     
                     if (!partidoJugado) {
-                        // Buscar los datos actualizados de los jugadores
-                        const jugador1Actualizado = jugadores.find(j => j && j._id && j._id === jugadoresGrupo[i]._id) || jugadoresGrupo[i];
-                        const jugador2Actualizado = jugadores.find(j => j && j._id && j._id === jugadoresGrupo[j]._id) || jugadoresGrupo[j];
+                        // Buscar los datos actualizados de los jugadores con verificación adicional
+                        let jugador1Actualizado, jugador2Actualizado;
+                        
+                        try {
+                            const jugador1EnGrupo = jugadoresGrupo[i];
+                            const jugador2EnGrupo = jugadoresGrupo[j];
+                            
+                            // Verificar y buscar jugador 1
+                            if (jugador1EnGrupo && jugador1EnGrupo._id) {
+                                const idJugador1 = jugador1EnGrupo._id;
+                                jugador1Actualizado = jugadores.find(jugador => jugador && jugador._id && jugador._id === idJugador1);
+                                // Si no se encuentra, usar los datos originales siempre que sean válidos
+                                if (!jugador1Actualizado && jugador1EnGrupo.nombre) {
+                                    jugador1Actualizado = jugador1EnGrupo;
+                                }
+                            }
+                            
+                            // Verificar y buscar jugador 2
+                            if (jugador2EnGrupo && jugador2EnGrupo._id) {
+                                const idJugador2 = jugador2EnGrupo._id;
+                                jugador2Actualizado = jugadores.find(jugador => jugador && jugador._id && jugador._id === idJugador2);
+                                // Si no se encuentra, usar los datos originales siempre que sean válidos
+                                if (!jugador2Actualizado && jugador2EnGrupo.nombre) {
+                                    jugador2Actualizado = jugador2EnGrupo;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error al buscar jugadores actualizados:', err);
+                        }
                         
                         // Verificar que ambos jugadores tengan datos válidos antes de añadirlos
-                        if (jugador1Actualizado && jugador2Actualizado) {
+                        if (jugador1Actualizado && jugador2Actualizado && 
+                            jugador1Actualizado.nombre && jugador2Actualizado.nombre) {
                             partidosPendientes.push({
                                 grupo: grupo.nombre.replace('Grupo ', ''),
                                 jugador1: jugador1Actualizado,
@@ -412,14 +651,26 @@ async function cargarPartidosPendientes() {
         
         // Mostrar los partidos pendientes
         partidosPendientesDiv.innerHTML = '';
-        partidosPendientes.slice(0, 5).forEach(partido => {
+        
+        // Verificar que haya partidos pendientes válidos
+        const partidosValidos = partidosPendientes.filter(partido => 
+            partido && partido.jugador1 && partido.jugador1.nombre && 
+            partido.jugador2 && partido.jugador2.nombre);
+            
+        if (partidosValidos.length === 0) {
+            partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-gamer-blue">No hay partidos pendientes con datos válidos</p>';
+            return;
+        }
+        
+        // Mostrar los primeros 5 partidos válidos
+        partidosValidos.slice(0, 5).forEach(partido => {
             const div = document.createElement('div');
             div.className = 'partido-reciente shadow-neon-blue hover:shadow-neon-blue/80 transition-all';
             
             try {
-                // Verificar los datos de los jugadores antes de insertar en el HTML
-                if (!partido.jugador1?.nombre || !partido.jugador2?.nombre) {
-                    console.error('Datos de jugador incompletos:', partido);
+                // Verificación adicional antes de mostrar el partido
+                if (!partido || !partido.grupo || !partido.jugador1?.nombre || !partido.jugador2?.nombre) {
+                    console.error('Datos de partido incompletos:', partido);
                     return;
                 }
                 
@@ -478,16 +729,29 @@ async function cargarPartidosPendientes() {
             });
         });
         
-        // Si hay más de 5 partidos pendientes, mostrar botón para ver más
-        if (partidosPendientes.length > 5) {
+        // Si hay más de 5 partidos pendientes válidos, mostrar botón para ver más
+        if (partidosValidos.length > 5) {
             const masPartidosDiv = document.createElement('div');
             masPartidosDiv.className = 'text-center mt-3';
-            masPartidosDiv.innerHTML = `<a href="/grupos" class="text-gamer-neon hover:underline">Ver todos los ${partidosPendientes.length} partidos pendientes</a>`;
+            masPartidosDiv.innerHTML = `<a href="/grupos" class="text-gamer-neon hover:underline">Ver todos los ${partidosValidos.length} partidos pendientes</a>`;
             partidosPendientesDiv.appendChild(masPartidosDiv);
         }
     } catch (error) {
         console.error('Error cargando partidos pendientes:', error);
-        partidosPendientesDiv.innerHTML = '<p class="text-center py-4 text-red-400">Error al cargar los partidos pendientes</p>';
+        
+        // Mostrar detalles del error para facilitar depuración
+        let mensajeError = 'Error al cargar los partidos pendientes';
+        if (error && error.message) {
+            mensajeError += ': ' + error.message;
+        }
+        
+        // Formatear mensaje de error con más información pero amigable para usuario
+        partidosPendientesDiv.innerHTML = `
+            <div class="text-center py-4">
+                <p class="text-red-400 font-bold">${mensajeError}</p>
+                <p class="text-gamer-blue text-sm mt-1">Por favor, recarga la página o contacta al administrador.</p>
+            </div>
+        `;
     }
 }
 
@@ -671,13 +935,48 @@ async function registrarPartidoRapido(e) {
     }
 }
 
+// Función para cargar equipos en el selector
+function cargarEquiposEnSelect() {
+    const equipoSelect = document.getElementById('equipo');
+    if (!equipoSelect) return;
+    
+    // Asegurarse de que equiposFIFA esté disponible (definido en el HTML)
+    if (typeof equiposFIFA !== 'undefined' && Array.isArray(equiposFIFA)) {
+        // Mantener la opción "Sin equipo"
+        equipoSelect.innerHTML = '<option value="">-- Sin equipo --</option>';
+        
+        // Ordenar equipos alfabéticamente
+        const equiposOrdenados = [...equiposFIFA].sort((a, b) => a.nombre.localeCompare(b.nombre));
+        
+        // Agregar opciones de equipos
+        equiposOrdenados.forEach(equipo => {
+            const option = document.createElement('option');
+            option.value = equipo.nombre;
+            option.textContent = equipo.nombre;
+            equipoSelect.appendChild(option);
+        });
+    } else {
+        console.warn('Variable equiposFIFA no disponible para cargar el selector de equipos');
+    }
+}
+
 // Event listeners
-window.addEventListener('DOMContentLoaded', () => {
-    cargarJugadores();
-    cargarPartidos();
-    cargarPartidosPendientes();
-    if (typeof cargarDatosSorteo === 'function') {
-        cargarDatosSorteo();
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Cargar datos principales en secuencia para evitar problemas
+        await cargarJugadores();
+        await cargarPartidos();
+        await cargarPartidosPendientes();
+        
+        // Cargar equipos en el selector
+        cargarEquiposEnSelect();
+        
+        // Cargar sorteo si la función existe
+        if (typeof cargarDatosSorteo === 'function') {
+            await cargarDatosSorteo();
+        }
+    } catch (err) {
+        console.error('Error al cargar datos iniciales:', err);
     }
     
     btnAgregarJugador.addEventListener('click', () => {
@@ -705,6 +1004,18 @@ window.addEventListener('DOMContentLoaded', () => {
     btnGenerarGrupos.addEventListener('click', generarGrupos);
     btnGenerarEliminatorias.addEventListener('click', generarEliminatorias);
     btnResetearTorneo.addEventListener('click', confirmarResetearTorneo);
+    
+    // Botón para reinicio completo (elimina jugadores, grupos, partidos, etc.)
+    const btnResetearCompleto = document.getElementById('btnResetearCompleto');
+    if (btnResetearCompleto) {
+        btnResetearCompleto.addEventListener('click', confirmarResetearCompleto);
+    }
+    
+    // Botón para simular torneo completo
+    const btnSimularTorneo = document.getElementById('btnSimularTorneo');
+    if (btnSimularTorneo) {
+        btnSimularTorneo.addEventListener('click', confirmarSimularTorneo);
+    }
     
     btnCancelarModal.addEventListener('click', () => {
         modalConfirmacion.classList.add('hidden');

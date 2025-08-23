@@ -39,8 +39,12 @@
                             <input type="text" id="nombre" class="input-field" required>
                         </div>
                         <div class="mb-3">
-                            <label class="block text-sm font-medium mb-1" for="equipo">Equipo</label>
-                            <input type="text" id="equipo" class="input-field" required>
+                            <label class="block text-sm font-medium mb-1" for="equipo">Equipo (Opcional)</label>
+                            <select id="equipo" class="input-field">
+                                <option value="">-- Sin equipo --</option>
+                                <!-- Los equipos se cargarán dinámicamente -->
+                            </select>
+                            <p class="text-xs text-gamer-blue mt-1">Puedes dejarlo vacío y asignarlo en el sorteo</p>
                         </div>
                         <button type="submit" class="btn-primary">Guardar</button>
                         <button type="button" id="btnCancelarJugador" class="btn-warning ml-2">Cancelar</button>
@@ -145,8 +149,14 @@
                 <button id="btnGenerarEliminatorias" class="btn-primary">
                     <i class="fas fa-trophy mr-1"></i> Generar Eliminatorias
                 </button>
+                <button id="btnSimularTorneo" class="btn-primary bg-purple-600 hover:bg-purple-700">
+                    <i class="fas fa-robot mr-1"></i> Simular Torneo Completo
+                </button>
                 <button id="btnResetearTorneo" class="btn-danger">
                     <i class="fas fa-trash mr-1"></i> Resetear Torneo
+                </button>
+                <button id="btnResetearCompleto" class="btn-danger bg-red-700 hover:bg-red-800">
+                    <i class="fas fa-bomb mr-1"></i> Reinicio Completo
                 </button>
             </div>
         </div>
@@ -213,6 +223,41 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar jugador -->
+    <div id="modalEditarJugador" class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden z-50">
+        <div class="flex items-center justify-center h-full">
+            <div class="bg-dark-card p-6 rounded-2xl shadow-neon-blue max-w-md w-full border border-gamer-blue">
+                <h3 class="text-xl font-bold mb-4 text-gamer-neon text-center">Editar Jugador</h3>
+                
+                <form id="formEditarJugador" class="space-y-4">
+                    <input type="hidden" id="editarJugadorId">
+                    
+                    <div>
+                        <label for="editarNombre" class="block text-white mb-1">Nombre:</label>
+                        <input type="text" id="editarNombre" name="nombre" class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-gamer-blue focus:outline-none" required>
+                    </div>
+                    
+                    <div>
+                        <label for="editarEquipo" class="block text-white mb-1">Equipo (opcional):</label>
+                        <select id="editarEquipo" name="equipo" class="w-full bg-gray-800 text-white p-2 rounded-lg border border-gray-700 focus:border-gamer-blue focus:outline-none">
+                            <option value="">Sin equipo</option>
+                            <!-- Las opciones se cargarán dinámicamente -->
+                        </select>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-2">
+                        <button type="button" id="btnCancelarEdicion" class="btn-warning">
+                            <i class="fas fa-times mr-1"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn-success">
+                            <i class="fas fa-save mr-1"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
