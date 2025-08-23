@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - Xtreame 2025</title>
+    <link href="css/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark-gradient text-white min-h-screen flex flex-col">
+    <!-- Barra de navegación -->
+    <nav class="bg-gamer-gradient p-4 shadow-neon-purple">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gamer-neon glow-text">Xtreame 2025</h1>
+            <ul class="flex space-x-6">
+                <li><a href="/" class="nav-link hover:text-gamer-neon transition-all">Inicio</a></li>
+                <li><a href="/grupos" class="nav-link hover:text-gamer-neon transition-all">Grupos</a></li>
+                <li><a href="/eliminatorias" class="nav-link hover:text-gamer-neon transition-all">Eliminatorias</a></li>
+                <li><a href="/estadisticas" class="nav-link hover:text-gamer-neon transition-all font-bold text-gamer-neon">Estadísticas</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mx-auto p-4 flex-grow">
+        <h2 class="text-3xl font-bold mb-6 text-gamer-neon glow-text">Estadísticas del Torneo</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <!-- Tabla de clasificación general -->
+            <div class="gamer-card col-span-1 xl:col-span-2">
+                <h3 class="card-header">Clasificación General</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr>
+                                <th class="table-header">Pos.</th>
+                                <th class="table-header">Jugador</th>
+                                <th class="table-header">PTS</th>
+                                <th class="table-header">PJ</th>
+                                <th class="table-header">G</th>
+                                <th class="table-header">E</th>
+                                <th class="table-header">P</th>
+                                <th class="table-header">GF</th>
+                                <th class="table-header">GC</th>
+                                <th class="table-header">DG</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaClasificacion">
+                            <!-- Aquí se cargarán los jugadores ordenados por puntos -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Máximos goleadores -->
+            <div class="gamer-card">
+                <h3 class="card-header">Máximos Goleadores</h3>
+                <div id="maximosGoleadores" class="space-y-2">
+                    <!-- Aquí se cargarán los máximos goleadores -->
+                </div>
+            </div>
+
+            <!-- Promedio de goles por partido -->
+            <div class="gamer-card">
+                <h3 class="card-header">Promedio de Goles por Partido</h3>
+                <div id="promedioGoles" class="space-y-2">
+                    <!-- Aquí se cargarán los promedios -->
+                </div>
+            </div>
+
+            <!-- Historial de partidos -->
+            <div class="card col-span-1 md:col-span-2">
+                <h3 class="text-xl font-bold mb-4">Historial de Partidos</h3>
+                <div id="historialPartidos" class="space-y-4">
+                    <!-- Aquí se cargarán todos los partidos del torneo -->
+                </div>
+            </div>
+
+            <!-- Eficiencia ofensiva y defensiva -->
+            <div class="gamer-card">
+                <h3 class="card-header">Mejor Ofensiva</h3>
+                <div id="mejorOfensiva" class="space-y-2">
+                    <!-- Aquí se cargarán los jugadores con mejor ofensiva -->
+                </div>
+            </div>
+
+            <!-- Eficiencia defensiva -->
+            <div class="gamer-card">
+                <h3 class="card-header">Mejor Defensiva</h3>
+                <div id="mejorDefensiva" class="space-y-2">
+                    <!-- Aquí se cargarán los jugadores con mejor defensiva -->
+                </div>
+            </div>
+
+            <!-- Racha más larga -->
+            <div class="gamer-card">
+                <h3 class="card-header">Rachas</h3>
+                <div id="rachas" class="space-y-4">
+                    <!-- Aquí se cargarán las rachas -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gamer-gradient text-white p-4 mt-6 shadow-neon-purple">
+        <div class="container mx-auto text-center">
+            <p class="text-gamer-neon">Xtreame 2025 - Torneo FIFA &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="js/fetchAPI.js"></script>
+    <script src="js/estadisticas.js"></script>
+</body>
+</html>

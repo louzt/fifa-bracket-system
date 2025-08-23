@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminatorias - Xtreame 2025</title>
+    <link href="css/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark-gradient text-white min-h-screen flex flex-col">
+    <!-- Barra de navegación -->
+    <nav class="bg-gamer-gradient p-4 shadow-neon-purple">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gamer-neon glow-text">Xtreame 2025</h1>
+            <ul class="flex space-x-6">
+                <li><a href="/" class="nav-link hover:text-gamer-neon transition-all">Inicio</a></li>
+                <li><a href="/grupos" class="nav-link hover:text-gamer-neon transition-all">Grupos</a></li>
+                <li><a href="/eliminatorias" class="nav-link hover:text-gamer-neon transition-all font-bold text-gamer-neon">Eliminatorias</a></li>
+                <li><a href="/estadisticas" class="nav-link hover:text-gamer-neon transition-all">Estadísticas</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mx-auto p-4 flex-grow">
+        <h2 class="text-3xl font-bold mb-6 text-gamer-neon glow-text">Fase Eliminatoria</h2>
+
+        <div class="gamer-card mb-6">
+            <div id="mensajeEliminatorias" class="text-center py-8">
+                <p class="text-lg text-white">Para iniciar la fase eliminatoria, primero debe completarse la fase de grupos.</p>
+                <button id="btnIrAGrupos" class="btn-primary mt-4">Ir a Fase de Grupos</button>
+            </div>
+
+            <!-- Diagrama de eliminatorias -->
+            <div id="diagramaEliminatorias" class="hidden">
+                <div class="flex flex-col md:flex-row justify-around items-center my-8">
+                    <div class="w-full md:w-1/3 px-4">
+                        <h3 class="card-header text-center">Semifinales</h3>
+                        
+                        <!-- Semifinal 1 -->
+                        <div class="gamer-card mb-6 relative bracket-item">
+                            <h4 class="font-bold mb-2 text-gamer-blue">Semifinal 1</h4>
+                            <div class="border border-gamer-blue rounded-lg p-4 bg-dark-card bracket-match">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span id="semifinal1Jugador1" class="font-medium text-white">1° Grupo A</span>
+                                    <span id="semifinal1Goles1" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span id="semifinal1Jugador2" class="font-medium text-white">1° Grupo B</span>
+                                    <span id="semifinal1Goles2" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <button id="btnJugarSemifinal1" class="btn-primary mt-4 w-full">Jugar Partido</button>
+                            </div>
+                        </div>
+
+                        <!-- Clasificatoria -->
+                        <div class="gamer-card mb-6 relative bracket-item">
+                            <h4 class="font-bold mb-2 text-gamer-blue">Clasificatoria</h4>
+                            <div class="border border-gamer-blue rounded-lg p-4 bg-dark-card bracket-match">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span id="clasificatoriaJugador1" class="font-medium text-white">2° Grupo A</span>
+                                    <span id="clasificatoriaGoles1" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span id="clasificatoriaJugador2" class="font-medium text-white">2° Grupo C</span>
+                                    <span id="clasificatoriaGoles2" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <button id="btnJugarClasificatoria" class="btn-primary mt-4 w-full">Jugar Partido</button>
+                            </div>
+                        </div>
+
+                        <!-- Semifinal 2 -->
+                        <div class="gamer-card mb-6 relative bracket-item">
+                            <h4 class="font-bold mb-2 text-gamer-blue">Semifinal 2</h4>
+                            <div class="border border-gamer-blue rounded-lg p-4 bg-dark-card bracket-match">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span id="semifinal2Jugador1" class="font-medium">1° Grupo C</span>
+                                    <span id="semifinal2Goles1" class="bg-fifa-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span id="semifinal2Jugador2" class="font-medium text-white">Ganador Clasificatoria</span>
+                                    <span id="semifinal2Goles2" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <button id="btnJugarSemifinal2" class="btn-primary mt-4 w-full" disabled>Jugar Partido</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-1/3 px-4">
+                        <h3 class="card-header text-center">Final</h3>
+                        <div class="gamer-card relative bracket-final">
+                            <div class="border border-gamer-neon rounded-lg p-4 bg-dark-card bracket-match">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span id="finalJugador1" class="font-medium text-white">Ganador SF1</span>
+                                    <span id="finalGoles1" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span id="finalJugador2" class="font-medium text-white">Ganador SF2</span>
+                                    <span id="finalGoles2" class="bg-gamer-blue text-white px-2 py-1 rounded">-</span>
+                                </div>
+                                <button id="btnJugarFinal" class="btn-primary mt-4 w-full" disabled>Jugar Final</button>
+                            </div>
+
+                            <!-- Campeón -->
+                            <div id="seccionCampeon" class="mt-8 text-center hidden">
+                                <h3 class="text-3xl font-bold mb-2 text-gamer-neon glow-text">¡CAMPEÓN!</h3>
+                                <div class="border-4 border-gamer-neon rounded-lg p-6 bg-dark-card shadow-neon-green">
+                                    <div class="text-center">
+                                        <i class="fas fa-trophy text-gamer-neon text-5xl mb-4 animate-pulse-slow"></i>
+                                        <h4 id="nombreCampeon" class="text-2xl font-bold text-white">-</h4>
+                                        <p class="text-gamer-neon">¡Felicidades!</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de registro de partido -->
+    <div id="modalPartidoEliminatorias" class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden z-50">
+        <div class="flex items-center justify-center h-full">
+            <div class="bg-dark-card p-6 rounded-2xl shadow-neon-blue max-w-md w-full border border-gamer-blue">
+                <h3 class="text-lg font-bold mb-4 text-gamer-neon" id="tituloModalEliminatoria">Registrar Partido</h3>
+                <form id="formPartidoEliminatoria">
+                <input type="hidden" id="faseActual">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="block text-sm font-medium mb-1">Jugador 1</p>
+                        <p id="elimJugador1" class="font-bold"></p>
+                        <div class="mt-2">
+                            <label class="block text-sm font-medium mb-1" for="golesElimJugador1">Goles</label>
+                            <input type="number" id="golesElimJugador1" class="input-field" min="0" required>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="block text-sm font-medium mb-1">Jugador 2</p>
+                        <p id="elimJugador2" class="font-bold"></p>
+                        <div class="mt-2">
+                            <label class="block text-sm font-medium mb-1" for="golesElimJugador2">Goles</label>
+                            <input type="number" id="golesElimJugador2" class="input-field" min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button type="button" id="btnCancelarPartidoElim" class="btn-warning">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gamer-gradient text-white p-4 mt-6 shadow-neon-purple">
+        <div class="container mx-auto text-center">
+            <p class="text-gamer-neon">Xtreame 2025 - Torneo FIFA &copy; 2025</p>
+        </div>
+    </footer>
+
+    <script src="js/fetchAPI.js"></script>
+    <script src="js/eliminatorias.js"></script>
+</body>
+</html>

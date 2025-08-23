@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xtreame 2025 - Torneo FIFA</title>
+    <link href="css/output.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark-gradient text-white min-h-screen flex flex-col">
+    <!-- Barra de navegación -->
+    <nav class="bg-gamer-gradient p-4 shadow-neon-purple">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gamer-neon glow-text">Xtreame 2025</h1>
+            <ul class="flex space-x-6">
+                <li><a href="/" class="nav-link hover:text-gamer-neon transition-all">Inicio</a></li>
+                <li><a href="/grupos" class="nav-link hover:text-gamer-neon transition-all">Grupos</a></li>
+                <li><a href="/eliminatorias" class="nav-link hover:text-gamer-neon transition-all">Eliminatorias</a></li>
+                <li><a href="/estadisticas" class="nav-link hover:text-gamer-neon transition-all">Estadísticas</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="container mx-auto p-4 flex-grow">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Panel de Jugadores -->
+            <div class="gamer-card">
+                <h2 class="card-header flex justify-between items-center">
+                    <span>Jugadores</span>
+                    <button id="btnAgregarJugador" class="btn-success text-sm">
+                        <i class="fas fa-plus mr-1"></i> Agregar Jugador
+                    </button>
+                </h2>
+                <div id="formAgregarJugador" class="mb-4 hidden">
+                    <form id="jugadorForm">
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-1" for="nombre">Nombre</label>
+                            <input type="text" id="nombre" class="input-field" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-1" for="equipo">Equipo</label>
+                            <input type="text" id="equipo" class="input-field" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                        <button type="button" id="btnCancelarJugador" class="btn-warning ml-2">Cancelar</button>
+                    </form>
+                </div>
+                <div id="listaJugadores" class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr>
+                                <th class="table-header">Nombre</th>
+                                <th class="table-header">Equipo</th>
+                                <th class="table-header">Puntos</th>
+                                <th class="table-header">PJ</th>
+                                <th class="table-header">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaJugadores">
+                            <!-- Aquí se cargarán dinámicamente los jugadores -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Panel de Partidos -->
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4 flex justify-between items-center">
+                    <span>Últimos Partidos</span>
+                    <button id="btnAgregarPartido" class="btn-success text-sm">
+                        <i class="fas fa-plus mr-1"></i> Registrar Partido
+                    </button>
+                </h2>
+                <div id="formAgregarPartido" class="mb-4 hidden">
+                    <form id="partidoForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1" for="jugador1">Jugador 1</label>
+                                <select id="jugador1" class="input-field" required>
+                                    <option value="">Selecciona jugador</option>
+                                </select>
+                                <div class="mt-2">
+                                    <label class="block text-sm font-medium mb-1" for="golesJugador1">Goles</label>
+                                    <input type="number" id="golesJugador1" class="input-field" min="0" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1" for="jugador2">Jugador 2</label>
+                                <select id="jugador2" class="input-field" required>
+                                    <option value="">Selecciona jugador</option>
+                                </select>
+                                <div class="mt-2">
+                                    <label class="block text-sm font-medium mb-1" for="golesJugador2">Goles</label>
+                                    <input type="number" id="golesJugador2" class="input-field" min="0" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn-primary">Guardar</button>
+                            <button type="button" id="btnCancelarPartido" class="btn-warning ml-2">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+                <div id="listaPartidos">
+                    <!-- Aquí se cargarán dinámicamente los partidos -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Partidos Pendientes -->
+        <div class="gamer-card mt-6">
+            <h2 class="card-header">Próximos Partidos</h2>
+            <div id="partidosPendientes" class="mt-3">
+                <!-- Aquí se cargarán dinámicamente los partidos pendientes -->
+                <p class="text-center py-4 text-gamer-blue">Cargando partidos pendientes...</p>
+            </div>
+        </div>
+
+        <!-- Sorteo de Equipos -->
+        <div class="gamer-card mt-6">
+            <h2 class="card-header flex justify-between items-center">
+                <span>Sorteo de Equipos FIFA</span>
+                <div>
+                    <button id="btnSortearTodos" class="btn-primary text-sm">
+                        <i class="fas fa-random mr-1"></i> Sortear Todos
+                    </button>
+                    <button id="btnResetSorteo" class="btn-warning text-sm ml-2">
+                        <i class="fas fa-undo mr-1"></i> Resetear Sorteo
+                    </button>
+                </div>
+            </h2>
+            <div id="sorteoEquipos" class="mt-4">
+                <p class="text-center py-4 text-gamer-blue">Presiona el botón para iniciar el sorteo de equipos</p>
+            </div>
+        </div>
+
+        <!-- Acciones del torneo -->
+        <div class="gamer-card mt-6">
+            <h2 class="card-header">Acciones del Torneo</h2>
+            <div class="flex flex-wrap gap-4">
+                <button id="btnGenerarGrupos" class="btn-primary">
+                    <i class="fas fa-users mr-1"></i> Generar Grupos
+                </button>
+                <button id="btnGenerarEliminatorias" class="btn-primary">
+                    <i class="fas fa-trophy mr-1"></i> Generar Eliminatorias
+                </button>
+                <button id="btnResetearTorneo" class="btn-danger">
+                    <i class="fas fa-trash mr-1"></i> Resetear Torneo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gamer-gradient text-white p-4 mt-6 shadow-neon-purple">
+        <div class="container mx-auto text-center">
+            <p class="text-gamer-neon">Xtreame 2025 - Torneo FIFA &copy; 2025</p>
+        </div>
+    </footer>
+
+    <!-- Modal de confirmación -->
+    <div id="modalConfirmacion" class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden z-50">
+        <div class="flex items-center justify-center h-full">
+            <div class="bg-dark-card p-6 rounded-2xl shadow-neon-blue max-w-md w-full border border-gamer-blue">
+                <h3 class="text-lg font-bold mb-4 text-gamer-neon" id="modalTitulo">Confirmar acción</h3>
+                <p id="modalMensaje" class="text-white">¿Estás seguro de que deseas realizar esta acción?</p>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button id="btnCancelarModal" class="btn-warning">Cancelar</button>
+                    <button id="btnConfirmarModal" class="btn-danger">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para sorteo de equipos -->
+    <div id="modalSorteo" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden z-50">
+        <div class="flex items-center justify-center h-full">
+            <div class="bg-dark-card p-6 rounded-2xl shadow-neon-blue max-w-3xl w-full border border-gamer-blue">
+                <h3 class="text-xl font-bold mb-4 text-gamer-neon text-center">Sorteo de Equipos FIFA</h3>
+                
+                <div id="sorteoContainer" class="mt-4">
+                    <div id="jugadorSorteo" class="text-center mb-6">
+                        <p class="text-lg text-white mb-2">Jugador:</p>
+                        <p class="text-2xl font-bold text-gamer-neon" id="nombreJugadorSorteo">-</p>
+                    </div>
+                    
+                    <div id="ruleta" class="border-2 border-gamer-blue rounded-2xl p-4 h-72 overflow-hidden relative">
+                        <div id="equiposRuleta" class="transition-all duration-1000 ease-out">
+                            <!-- Aquí se cargarán los equipos para el sorteo -->
+                        </div>
+                        <div class="absolute top-0 left-0 w-full h-full pointer-events-none" 
+                             style="background: linear-gradient(to bottom, rgba(28,28,39,1) 0%, rgba(28,28,39,0) 20%, rgba(28,28,39,0) 80%, rgba(28,28,39,1) 100%);">
+                        </div>
+                        <div class="absolute top-1/2 left-0 w-full h-16 -mt-8 pointer-events-none bg-gamer-blue/20 border-y-2 border-gamer-blue shadow-neon-blue"></div>
+                    </div>
+                    
+                    <div class="flex justify-center mt-6 space-x-4">
+                        <button id="btnSortear" class="btn-success">
+                            <i class="fas fa-dice mr-1"></i> Sortear Equipo
+                        </button>
+                        <button id="btnCerrarSorteo" class="btn-warning">
+                            <i class="fas fa-times mr-1"></i> Cerrar
+                        </button>
+                    </div>
+
+                    <div id="resultadoSorteo" class="hidden mt-6 text-center">
+                        <p class="text-xl font-bold text-gamer-neon mb-2">¡Equipo sorteado!</p>
+                        <div id="equipoSorteado" class="bg-gray-800/70 rounded-xl p-4 flex items-center justify-center flex-col">
+                            <img id="logoEquipoSorteado" src="" alt="Logo equipo" class="h-32 mb-4">
+                            <p id="nombreEquipoSorteado" class="text-2xl font-bold text-white"></p>
+                            <p id="infoEquipoSorteado" class="text-gamer-blue"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/fetchAPI.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/sorteo.js"></script>
+</body>
+</html>

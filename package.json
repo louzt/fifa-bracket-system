@@ -1,0 +1,31 @@
+{
+  "name": "xtreame-2025",
+  "version": "1.0.0",
+  "description": "Aplicación para gestionar un torneo de FIFA con fase de grupos y eliminatorias",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "concurrently \"nodemon server.js\" \"npm run watch:css\"",
+    "build:css": "tailwindcss -i ./src/css/input.css -o ./public/css/output.css",
+    "watch:css": "tailwindcss -i ./src/css/input.css -o ./public/css/output.css --watch"
+  },
+  "keywords": [
+    "fifa",
+    "torneo",
+    "futbol",
+    "xtreame"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nedb": "^1.8.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
+    "nodemon": "^3.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}
