@@ -4,9 +4,20 @@ let jugadoresParaSorteo = [];
 let jugadorActual = null;
 let intervaloAnimacion = null;
 let equipoSeleccionado = null;
+// equiposFIFA se define en el HTML antes de incluir este script
 
 // Importación de la función fetchAPI
 // Esta función está definida en fetchAPI.js y está incluida en el HTML
+
+// Función para mezclar un array (algoritmo Fisher-Yates)
+function mezclarArray(array) {
+    const nuevoArray = [...array];
+    for (let i = nuevoArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [nuevoArray[i], nuevoArray[j]] = [nuevoArray[j], nuevoArray[i]];
+    }
+    return nuevoArray;
+}
 
 // Referencias del DOM
 let modalSorteo;
@@ -73,8 +84,23 @@ async function cargarDatosSorteo() {
         sorteoEquipos.innerHTML = '';
         jugadores.forEach(jugador => {
             const asignacion = asignados.find(a => a.jugadorId === jugador._id);
-            const equipoAsignado = asignacion ? equipos.find(e => e.id === asignacion.equipoId) || 
-                                               { nombre: jugador.equipo, logo: '', jugador5Estrellas: 'Desconocido' } : null;
+            
+            // Primero buscamos en equipos disponibles
+            let equipoAsignado = null;
+            if (asignacion) {
+                // Buscamos en todos los equipos (equiposFIFA), no solo en los disponibles
+                equipoAsignado = equiposFIFA.find(e => e.id === asignacion.equipoId);
+                
+                // Si no lo encontramos, crear un objeto con la información básica
+                if (!equipoAsignado) {
+                    equipoAsignado = { 
+                        nombre: jugador.equipo || asignacion.equipoId, 
+                        logo: `img/equipos/${asignacion.equipoId}.png`, 
+                        jugador5Estrellas: 'Desconocido' 
+                    };
+                    console.log('Equipo no encontrado, usando alternativa:', equipoAsignado);
+                }
+            }
             
             const jugadorDiv = document.createElement('div');
             jugadorDiv.className = 'border border-gamer-blue/30 rounded-lg p-4 mb-4 shadow-neon-blue hover:shadow-neon-blue/80 transition-all';
@@ -204,6 +230,9 @@ function prepararRuleta() {
     equiposRuleta.innerHTML = '';
     equiposRuleta.style.transform = 'translateY(0)';
     
+    // Log para depuración
+    console.log('Equipos disponibles:', equiposDisponibles);
+    
     // Duplicar y mezclar equipos para crear efecto más aleatorio
     const equiposMezclados = [...equiposDisponibles, ...equiposDisponibles];
     const equiposAlterados = mezclarArray(equiposMezclados);
@@ -290,6 +319,10 @@ async function sortearEquipo() {
 // Función para mostrar el resultado del sorteo
 async function mostrarResultadoSorteo() {
     if (!equipoSeleccionado || !jugadorActual) return;
+    
+    // Log para depuración
+    console.log('Equipo seleccionado:', equipoSeleccionado);
+    console.log('URL de la imagen:', equipoSeleccionado.logo);
     
     // Mostrar el equipo seleccionado
     logoEquipoSorteado.src = equipoSeleccionado.logo;

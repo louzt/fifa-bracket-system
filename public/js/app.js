@@ -389,14 +389,17 @@ async function cargarPartidosPendientes() {
                     
                     if (!partidoJugado) {
                         // Buscar los datos actualizados de los jugadores
-                        const jugador1Actualizado = jugadores.find(j => j._id === jugadoresGrupo[i]._id) || jugadoresGrupo[i];
-                        const jugador2Actualizado = jugadores.find(j => j._id === jugadoresGrupo[j]._id) || jugadoresGrupo[j];
+                        const jugador1Actualizado = jugadores.find(j => j && j._id && j._id === jugadoresGrupo[i]._id) || jugadoresGrupo[i];
+                        const jugador2Actualizado = jugadores.find(j => j && j._id && j._id === jugadoresGrupo[j]._id) || jugadoresGrupo[j];
                         
-                        partidosPendientes.push({
-                            grupo: grupo.nombre.replace('Grupo ', ''),
-                            jugador1: jugador1Actualizado,
-                            jugador2: jugador2Actualizado
-                        });
+                        // Verificar que ambos jugadores tengan datos válidos antes de añadirlos
+                        if (jugador1Actualizado && jugador2Actualizado) {
+                            partidosPendientes.push({
+                                grupo: grupo.nombre.replace('Grupo ', ''),
+                                jugador1: jugador1Actualizado,
+                                jugador2: jugador2Actualizado
+                            });
+                        }
                     }
                 }
             }

@@ -6,7 +6,7 @@ const equipos = [
         nombre: 'Real Madrid',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/real-madrid.png',
+        logo: 'img/equipos/real-madrid.png', // Quitamos la barra inicial
         jugador5Estrellas: 'Vinícius Jr., Mbappé, Rodrygo',
     },
     {
@@ -14,7 +14,7 @@ const equipos = [
         nombre: 'Manchester City',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/man-city.png',
+        logo: 'img/equipos/man-city.png',
         jugador5Estrellas: 'Grealish',
     },
     {
@@ -22,7 +22,7 @@ const equipos = [
         nombre: 'Paris Saint-Germain',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/psg.png',
+        logo: 'img/equipos/psg.png',
         jugador5Estrellas: 'Dembélé',
     },
     {
@@ -30,7 +30,7 @@ const equipos = [
         nombre: 'Liverpool',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/liverpool.png',
+        logo: 'img/equipos/liverpool.png',
         jugador5Estrellas: 'Salah, Díaz',
     },
     {
@@ -38,7 +38,7 @@ const equipos = [
         nombre: 'FC Barcelona',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/barcelona.png',
+        logo: 'img/equipos/barcelona.png',
         jugador5Estrellas: 'Raphinha, Yamal',
     },
     {
@@ -46,7 +46,7 @@ const equipos = [
         nombre: 'Bayern Munich',
         tipo: 'club',
         estrellas: 5,
-        logo: '/img/equipos/bayern.png',
+        logo: 'img/equipos/bayern.png',
         jugador5Estrellas: 'Coman, Sané',
     },
     {
@@ -54,7 +54,7 @@ const equipos = [
         nombre: 'Chelsea',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/chelsea.png',
+        logo: 'img/equipos/chelsea.png',
         jugador5Estrellas: 'Nkunku',
     },
     {
@@ -62,7 +62,7 @@ const equipos = [
         nombre: 'Inter de Milán',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/inter.png',
+        logo: 'img/equipos/inter.png',
         jugador5Estrellas: '-',
     },
     {
@@ -70,7 +70,7 @@ const equipos = [
         nombre: 'Arsenal',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/arsenal.png',
+        logo: 'img/equipos/arsenal.png',
         jugador5Estrellas: 'Saka',
     },
     {
@@ -78,7 +78,7 @@ const equipos = [
         nombre: 'Atlético de Madrid',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/atletico.png',
+        logo: 'img/equipos/atletico.png',
         jugador5Estrellas: 'Griezmann',
     },
     {
@@ -86,7 +86,7 @@ const equipos = [
         nombre: 'Juventus',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/juventus.png',
+        logo: 'img/equipos/juventus.png',
         jugador5Estrellas: '-',
     },
     {
@@ -94,7 +94,7 @@ const equipos = [
         nombre: 'AC Milan',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/milan.png',
+        logo: 'img/equipos/milan.png',
         jugador5Estrellas: 'Leão',
     },
     {
@@ -102,7 +102,7 @@ const equipos = [
         nombre: 'Borussia Dortmund',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/dortmund.png',
+        logo: 'img/equipos/dortmund.png',
         jugador5Estrellas: 'Sancho',
     },
     {
@@ -110,7 +110,7 @@ const equipos = [
         nombre: 'Napoli',
         tipo: 'club',
         estrellas: 4.5,
-        logo: '/img/equipos/napoli.png',
+        logo: 'img/equipos/napoli.png',
         jugador5Estrellas: 'Kvaratskhelia',
     },
     // SELECCIONES
@@ -119,7 +119,7 @@ const equipos = [
         nombre: 'Brasil',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/brasil.png',
+        logo: 'img/equipos/brasil.png',
         jugador5Estrellas: 'Neymar, Vinícius Jr., Rodrygo',
     },
     {
@@ -127,7 +127,7 @@ const equipos = [
         nombre: 'Francia',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/francia.png',
+        logo: 'img/equipos/francia.png',
         jugador5Estrellas: 'Mbappé, Dembélé',
     },
     {
@@ -135,7 +135,7 @@ const equipos = [
         nombre: 'Inglaterra',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/inglaterra.png',
+        logo: 'img/equipos/inglaterra.png',
         jugador5Estrellas: 'Grealish, Saka',
     },
     {
@@ -143,7 +143,7 @@ const equipos = [
         nombre: 'Argentina',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/argentina.png',
+        logo: 'img/equipos/argentina.png',
         jugador5Estrellas: 'Messi, Di María',
     },
     {
@@ -151,7 +151,7 @@ const equipos = [
         nombre: 'Portugal',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/portugal.png',
+        logo: 'img/equipos/portugal.png',
         jugador5Estrellas: 'João Félix, Leão',
     },
     {
@@ -159,7 +159,7 @@ const equipos = [
         nombre: 'Bélgica',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/belgica.png',
+        logo: 'img/equipos/belgica.png',
         jugador5Estrellas: '-',
     },
     {
@@ -167,7 +167,7 @@ const equipos = [
         nombre: 'Holanda',
         tipo: 'seleccion',
         estrellas: 4.5,
-        logo: '/img/equipos/holanda.png',
+        logo: 'img/equipos/holanda.png',
         jugador5Estrellas: '-',
     },
     {
@@ -175,7 +175,7 @@ const equipos = [
         nombre: 'España',
         tipo: 'seleccion',
         estrellas: 4.5,
-        logo: '/img/equipos/espana.png',
+        logo: 'img/equipos/espana.png',
         jugador5Estrellas: '-',
     },
     {
@@ -183,7 +183,7 @@ const equipos = [
         nombre: 'Alemania',
         tipo: 'seleccion',
         estrellas: 5,
-        logo: '/img/equipos/alemania.png',
+        logo: 'img/equipos/alemania.png',
         jugador5Estrellas: 'Sané, Musiala',
     },
     {
@@ -191,7 +191,7 @@ const equipos = [
         nombre: 'Italia',
         tipo: 'seleccion',
         estrellas: 4.5,
-        logo: '/img/equipos/italia.png',
+        logo: 'img/equipos/italia.png',
         jugador5Estrellas: '-',
     },
 ];
