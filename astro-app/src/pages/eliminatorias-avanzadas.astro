@@ -1,0 +1,735 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Eliminatorias Avanzadas - FIFA Tournament">
+  <div class="container mx-auto px-6 py-8 min-h-screen">
+    <SectionHeader 
+      title="⚔️ Sistema de Eliminatorias" 
+      subtitle="Eliminatorias adaptativas con ida y vuelta automática"
+    />
+
+    <!-- Estado del Sistema -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Clasificados -->
+      <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-blue-100 text-sm font-medium">Clasificados</h3>
+            <p id="total-clasificados" class="text-3xl font-bold">0</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-500/30 rounded-lg flex items-center justify-center">
+            👥
+          </div>
+        </div>
+      </div>
+
+      <!-- Fase Actual -->
+      <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-green-100 text-sm font-medium">Fase Actual</h3>
+            <p id="fase-actual" class="text-lg font-bold">-</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/30 rounded-lg flex items-center justify-center">
+            🏆
+          </div>
+        </div>
+      </div>
+
+      <!-- Partidos Pendientes -->
+      <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-purple-100 text-sm font-medium">Pendientes</h3>
+            <p id="partidos-pendientes" class="text-3xl font-bold">0</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500/30 rounded-lg flex items-center justify-center">
+            ⏳
+          </div>
+        </div>
+      </div>
+
+      <!-- Progreso -->
+      <div class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-yellow-100 text-sm font-medium">Progreso</h3>
+            <p id="progreso-porcentaje" class="text-3xl font-bold">0%</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-500/30 rounded-lg flex items-center justify-center">
+            📈
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles -->
+    <div class="bg-slate-800/80 rounded-xl p-6 mb-8 border border-slate-600/50">
+      <div class="flex flex-wrap items-center gap-4 mb-4">
+        <h2 class="text-xl font-bold text-white">🛠️ Controles</h2>
+        <button id="btn-cargar-clasificados" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          📥 Cargar Clasificados
+        </button>
+        <button id="btn-generar-eliminatorias" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+          ⚔️ Generar Eliminatorias
+        </button>
+        <button id="btn-simular-fase" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+          🎲 Simular Fase
+        </button>
+        <button id="btn-avanzar-fase" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+          ➡️ Avanzar Fase
+        </button>
+      </div>
+
+      <!-- Configuración Rápida -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-blue-400 font-semibold mb-2">Tipo de Partidos</label>
+          <select id="tipo-partidos" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+            <option value="ida">Solo Ida</option>
+            <option value="ida-vuelta">Ida y Vuelta</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-green-400 font-semibold mb-2">Modo de Clasificados</label>
+          <select id="modo-clasificados" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+            <option value="automatico">Automático desde Grupos</option>
+            <option value="manual">Selección Manual</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-purple-400 font-semibold mb-2">Acciones</label>
+          <div class="flex gap-2">
+            <button id="btn-reset" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm">
+              🔄 Reset
+            </button>
+            <button id="btn-exportar" class="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm">
+              📊 Exportar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cuadro de Eliminatorias -->
+    <div id="cuadro-eliminatorias" class="mb-8" style="display: none;">
+      <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+        <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+          <span class="mr-2">🏆</span> Cuadro de Eliminatorias
+        </h2>
+        <div id="fases-container" class="space-y-8">
+          <!-- Las fases se generarán dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Partidos de la Fase Actual -->
+    <div id="partidos-fase-actual" class="mb-8" style="display: none;">
+      <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+        <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+          <span class="mr-2">⚽</span> Partidos de <span id="nombre-fase-actual" class="text-blue-400 ml-2">-</span>
+        </h2>
+        <div id="lista-partidos-fase" class="space-y-4">
+          <!-- Los partidos se generarán dinámicamente -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Selector de Clasificados Manual -->
+    <div id="selector-clasificados" class="mb-8" style="display: none;">
+      <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+        <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+          <span class="mr-2">👥</span> Seleccionar Clasificados
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label class="block text-blue-400 font-semibold mb-2">Número de Clasificados</label>
+            <select id="num-clasificados" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+              <option value="2">2 (Final directa)</option>
+              <option value="4">4 (Semifinales)</option>
+              <option value="8">8 (Cuartos)</option>
+              <option value="16">16 (Octavos)</option>
+            </select>
+          </div>
+        </div>
+        <div id="grid-jugadores" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
+          <!-- Los jugadores se cargarán aquí -->
+        </div>
+        <div class="flex gap-3">
+          <button id="btn-confirmar-clasificados" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+            ✅ Confirmar Clasificados
+          </button>
+          <button id="btn-cancelar-seleccion" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+            ❌ Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Resultado -->
+    <div id="modal-resultado" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="display: none;">
+      <div class="bg-slate-800 rounded-xl p-6 max-w-md mx-4 border border-blue-500/30">
+        <h3 class="text-xl font-bold text-white mb-4">⚽ Registrar Resultado</h3>
+        <div id="partido-info" class="mb-4 p-4 bg-slate-700 rounded-lg">
+          <!-- Info del partido se mostrará aquí -->
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label id="label-jugador1" class="block text-blue-400 font-semibold mb-2">Jugador 1</label>
+            <input type="number" id="goles-jugador1" min="0" max="20" value="0" 
+                   class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-center text-2xl">
+          </div>
+          <div>
+            <label id="label-jugador2" class="block text-red-400 font-semibold mb-2">Jugador 2</label>
+            <input type="number" id="goles-jugador2" min="0" max="20" value="0" 
+                   class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-center text-2xl">
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button id="btn-cancelar-resultado" class="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg">
+            Cancelar
+          </button>
+          <button id="btn-guardar-resultado" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { SistemaEliminatorias } from '../scripts/sistemaEliminatorias';
+  import type { Jugador, ConfiguracionTorneo } from '../types/index';
+
+  class EliminatoriasApp {
+    private jugadores: Jugador[] = [];
+    private clasificados: Jugador[] = [];
+    private sistema: SistemaEliminatorias | null = null;
+    private configuracion: ConfiguracionTorneo = {
+      tipoGrupos: 'automatico',
+      partidosGrupo: 'ida',
+      tipoEliminatorias: 'automatico',
+      permitirDuplicados: false,
+      soloSelecciones: false
+    };
+    private partidoActual: any = null;
+
+    constructor() {
+      this.inicializar();
+    }
+
+    private async inicializar(): Promise<void> {
+      await this.cargarDatos();
+      this.configurarEventos();
+      this.actualizarEstado();
+    }
+
+    private async cargarDatos(): Promise<void> {
+      try {
+        const [jugadoresResponse, partidosResponse] = await Promise.all([
+          fetch('/api/jugadores'),
+          fetch('/api/partidos')
+        ]);
+
+        this.jugadores = await jugadoresResponse.json();
+        const partidos = await partidosResponse.json();
+
+        // Obtener clasificados automáticamente desde la fase de grupos
+        this.clasificados = await this.obtenerClasificadosAutomatico(partidos);
+        
+        console.log('✅ Datos cargados:', {
+          jugadores: this.jugadores.length,
+          clasificados: this.clasificados.length
+        });
+      } catch (error) {
+        console.error('❌ Error cargando datos:', error);
+      }
+    }
+
+    private async obtenerClasificadosAutomatico(partidos: any[]): Promise<Jugador[]> {
+      // Lógica simplificada: obtener los mejores jugadores de cada grupo
+      const partidosGrupo = partidos.filter(p => p.tipo === 'grupo' && p.golesJugador1 !== undefined);
+      
+      if (partidosGrupo.length === 0) {
+        return this.jugadores.slice(0, 8); // Fallback
+      }
+
+      // Calcular puntos por jugador
+      const puntos: Record<string, number> = {};
+      
+      partidosGrupo.forEach(partido => {
+        const goles1 = partido.golesJugador1 || 0;
+        const goles2 = partido.golesJugador2 || 0;
+        
+        if (!puntos[partido.jugador1]) puntos[partido.jugador1] = 0;
+        if (!puntos[partido.jugador2]) puntos[partido.jugador2] = 0;
+        
+        if (goles1 > goles2) {
+          puntos[partido.jugador1] += 3;
+        } else if (goles2 > goles1) {
+          puntos[partido.jugador2] += 3;
+        } else {
+          puntos[partido.jugador1] += 1;
+          puntos[partido.jugador2] += 1;
+        }
+      });
+
+      // Ordenar por puntos y tomar los mejores
+      const jugadoresOrdenados = Object.entries(puntos)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 8)
+        .map(([jugadorId]) => this.jugadores.find(j => j._id === jugadorId))
+        .filter(Boolean) as Jugador[];
+
+      return jugadoresOrdenados;
+    }
+
+    private configurarEventos(): void {
+      // Botones principales
+      document.getElementById('btn-cargar-clasificados')?.addEventListener('click', () => {
+        this.mostrarSelectorClasificados();
+      });
+
+      document.getElementById('btn-generar-eliminatorias')?.addEventListener('click', () => {
+        this.generarEliminatorias();
+      });
+
+      document.getElementById('btn-simular-fase')?.addEventListener('click', () => {
+        this.simularFaseActual();
+      });
+
+      document.getElementById('btn-avanzar-fase')?.addEventListener('click', () => {
+        this.avanzarFase();
+      });
+
+      document.getElementById('btn-reset')?.addEventListener('click', () => {
+        this.resetearSistema();
+      });
+
+      // Selector de clasificados
+      document.getElementById('btn-confirmar-clasificados')?.addEventListener('click', () => {
+        this.confirmarClasificados();
+      });
+
+      document.getElementById('btn-cancelar-seleccion')?.addEventListener('click', () => {
+        this.ocultarSelectorClasificados();
+      });
+
+      // Modal de resultado
+      document.getElementById('btn-cancelar-resultado')?.addEventListener('click', () => {
+        this.cerrarModalResultado();
+      });
+
+      document.getElementById('btn-guardar-resultado')?.addEventListener('click', () => {
+        this.guardarResultado();
+      });
+
+      // Configuración
+      document.getElementById('tipo-partidos')?.addEventListener('change', () => {
+        this.actualizarConfiguracion();
+      });
+
+      document.getElementById('modo-clasificados')?.addEventListener('change', () => {
+        this.cambiarModoClasificados();
+      });
+    }
+
+    private actualizarEstado(): void {
+      // Actualizar dashboard
+      document.getElementById('total-clasificados')!.textContent = this.clasificados.length.toString();
+      
+      if (this.sistema) {
+        const estado = this.sistema.obtenerEstado();
+        const faseActual = this.obtenerFaseActual();
+        
+        document.getElementById('fase-actual')!.textContent = faseActual || 'No iniciado';
+        document.getElementById('partidos-pendientes')!.textContent = estado.fases
+          .reduce((total: any, fase: any) => total + fase.partidosPendientes, 0).toString();
+        
+        const progreso = estado.totalPartidos > 0 ? 
+          Math.round((estado.partidosCompletados / estado.totalPartidos) * 100) : 0;
+        document.getElementById('progreso-porcentaje')!.textContent = `${progreso}%`;
+      } else {
+        document.getElementById('fase-actual')!.textContent = 'No generado';
+        document.getElementById('partidos-pendientes')!.textContent = '0';
+        document.getElementById('progreso-porcentaje')!.textContent = '0%';
+      }
+    }
+
+    private mostrarSelectorClasificados(): void {
+      const selector = document.getElementById('selector-clasificados');
+      const grid = document.getElementById('grid-jugadores');
+      
+      if (!selector || !grid) return;
+
+      // Mostrar jugadores disponibles
+      grid.innerHTML = '';
+      this.jugadores.forEach(jugador => {
+        const elemento = document.createElement('div');
+        elemento.className = 'p-3 bg-slate-700 rounded-lg cursor-pointer transition-colors hover:bg-slate-600 border-2 border-transparent';
+        elemento.dataset.jugadorId = jugador._id;
+        
+        const equipo = typeof jugador.equipo === 'string' ? jugador.equipo : jugador.equipo?.nombre;
+        
+        elemento.innerHTML = `
+          <div class="text-white font-medium">${jugador.nombre}</div>
+          <div class="text-blue-400 text-sm">${equipo || 'Sin equipo'}</div>
+        `;
+        
+        elemento.addEventListener('click', () => {
+          this.toggleSeleccionJugador(elemento);
+        });
+        
+        grid.appendChild(elemento);
+      });
+
+      selector.style.display = 'block';
+    }
+
+    private toggleSeleccionJugador(elemento: HTMLElement): void {
+      const maxClasificados = parseInt((document.getElementById('num-clasificados') as HTMLSelectElement).value);
+      const seleccionados = document.querySelectorAll('#grid-jugadores .border-green-500').length;
+      
+      if (elemento.classList.contains('border-green-500')) {
+        // Deseleccionar
+        elemento.classList.remove('border-green-500', 'bg-green-600/30');
+        elemento.classList.add('border-transparent');
+      } else if (seleccionados < maxClasificados) {
+        // Seleccionar
+        elemento.classList.add('border-green-500', 'bg-green-600/30');
+        elemento.classList.remove('border-transparent');
+      }
+    }
+
+    private confirmarClasificados(): void {
+      const seleccionados = Array.from(document.querySelectorAll('#grid-jugadores .border-green-500'))
+        .map(el => (el as HTMLElement).dataset.jugadorId)
+        .filter(Boolean);
+
+      this.clasificados = seleccionados
+        .map(id => this.jugadores.find(j => j._id === id))
+        .filter(Boolean) as Jugador[];
+
+      this.ocultarSelectorClasificados();
+      this.actualizarEstado();
+      
+      console.log('✅ Clasificados confirmados:', this.clasificados.length);
+    }
+
+    private ocultarSelectorClasificados(): void {
+      const selector = document.getElementById('selector-clasificados');
+      if (selector) selector.style.display = 'none';
+    }
+
+    private generarEliminatorias(): void {
+      if (this.clasificados.length < 2) {
+        alert('Se necesitan al menos 2 clasificados para generar eliminatorias');
+        return;
+      }
+
+      this.sistema = new SistemaEliminatorias(this.clasificados, this.configuracion);
+      this.sistema.asignarClasificados();
+      
+      this.mostrarCuadroEliminatorias();
+      this.mostrarPartidosFaseActual();
+      this.actualizarEstado();
+      
+      console.log('✅ Eliminatorias generadas');
+    }
+
+    private mostrarCuadroEliminatorias(): void {
+      const container = document.getElementById('cuadro-eliminatorias');
+      const fasesContainer = document.getElementById('fases-container');
+      
+      if (!container || !fasesContainer || !this.sistema) return;
+
+      container.style.display = 'block';
+      fasesContainer.innerHTML = '';
+
+      const fases = this.sistema.obtenerTodasLasFases();
+      
+      Array.from(fases.entries()).forEach(([nombreFase, fase]) => {
+        const faseElement = document.createElement('div');
+        faseElement.className = 'bg-slate-700/50 rounded-lg p-6';
+        
+        const partidosHtml = fase.partidos
+          .filter(p => p.fase === nombreFase) // Solo partidos principales
+          .map(partido => {
+            const estado = partido.estado === 'jugado' ? '✅' : 
+                          partido.estado === 'programado' ? '⏳' : '⏸️';
+            
+            return `
+              <div class="flex items-center justify-between p-3 bg-slate-600/50 rounded-lg">
+                <span class="text-white">${partido.jugador1Nombre || 'TBD'}</span>
+                <div class="text-center">
+                  <span class="text-gray-400">${estado}</span>
+                  ${partido.golesJugador1 !== undefined ? 
+                    `<div class="text-sm">${partido.golesJugador1} - ${partido.golesJugador2}</div>` : 
+                    '<div class="text-sm">vs</div>'
+                  }
+                </div>
+                <span class="text-white">${partido.jugador2Nombre || 'TBD'}</span>
+              </div>
+            `;
+          }).join('');
+
+        faseElement.innerHTML = `
+          <h3 class="text-blue-400 font-bold text-lg mb-4">${nombreFase}</h3>
+          <div class="space-y-3">
+            ${partidosHtml || '<p class="text-gray-400">No hay partidos en esta fase</p>'}
+          </div>
+        `;
+        
+        fasesContainer.appendChild(faseElement);
+      });
+    }
+
+    private mostrarPartidosFaseActual(): void {
+      const container = document.getElementById('partidos-fase-actual');
+      const lista = document.getElementById('lista-partidos-fase');
+      const nombreFase = document.getElementById('nombre-fase-actual');
+      
+      if (!container || !lista || !nombreFase || !this.sistema) return;
+
+      const faseActual = this.obtenerFaseActual();
+      if (!faseActual) return;
+
+      container.style.display = 'block';
+      nombreFase.textContent = faseActual;
+      
+      const partidos = this.sistema.obtenerPartidosFase(faseActual)
+        .filter(p => p.fase === faseActual);
+
+      lista.innerHTML = '';
+      
+      partidos.forEach(partido => {
+        const elemento = document.createElement('div');
+        elemento.className = 'bg-slate-700/50 rounded-lg p-4';
+        
+        const puedeJugar = partido.estado === 'programado';
+        
+        elemento.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-white font-medium">${partido.jugador1Nombre || 'TBD'}</span>
+                <span class="text-2xl font-bold ${partido.golesJugador1 !== undefined ? 'text-white' : 'text-gray-500'}">
+                  ${partido.golesJugador1 !== undefined ? partido.golesJugador1 : '-'}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-white font-medium">${partido.jugador2Nombre || 'TBD'}</span>
+                <span class="text-2xl font-bold ${partido.golesJugador2 !== undefined ? 'text-white' : 'text-gray-500'}">
+                  ${partido.golesJugador2 !== undefined ? partido.golesJugador2 : '-'}
+                </span>
+              </div>
+            </div>
+            <div class="ml-4">
+              ${puedeJugar ? 
+                `<button class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg btn-jugar" data-partido="${partido.id}">
+                  ⚽ Jugar
+                </button>` :
+                `<span class="px-4 py-2 bg-gray-600 text-white rounded-lg">
+                  ${partido.estado === 'jugado' ? '✅ Jugado' : '⏸️ Pendiente'}
+                </span>`
+              }
+            </div>
+          </div>
+        `;
+        
+        // Agregar evento click para jugar
+        const btnJugar = elemento.querySelector('.btn-jugar');
+        if (btnJugar) {
+          btnJugar.addEventListener('click', () => {
+            this.mostrarModalResultado(partido);
+          });
+        }
+        
+        lista.appendChild(elemento);
+      });
+    }
+
+    private mostrarModalResultado(partido: any): void {
+      const modal = document.getElementById('modal-resultado');
+      const info = document.getElementById('partido-info');
+      const label1 = document.getElementById('label-jugador1');
+      const label2 = document.getElementById('label-jugador2');
+      
+      if (!modal || !info || !label1 || !label2) return;
+
+      this.partidoActual = partido;
+      
+      info.innerHTML = `
+        <div class="text-center">
+          <h4 class="text-white font-bold text-lg">${partido.fase}</h4>
+          <p class="text-gray-400">${partido.jugador1Nombre} vs ${partido.jugador2Nombre}</p>
+        </div>
+      `;
+      
+      label1.textContent = partido.jugador1Nombre;
+      label2.textContent = partido.jugador2Nombre;
+      
+      // Reset valores
+      (document.getElementById('goles-jugador1') as HTMLInputElement).value = '0';
+      (document.getElementById('goles-jugador2') as HTMLInputElement).value = '0';
+      
+      modal.style.display = 'flex';
+    }
+
+    private cerrarModalResultado(): void {
+      const modal = document.getElementById('modal-resultado');
+      if (modal) modal.style.display = 'none';
+      this.partidoActual = null;
+    }
+
+    private guardarResultado(): void {
+      if (!this.partidoActual || !this.sistema) return;
+
+      const goles1 = parseInt((document.getElementById('goles-jugador1') as HTMLInputElement).value);
+      const goles2 = parseInt((document.getElementById('goles-jugador2') as HTMLInputElement).value);
+
+      const exito = this.sistema.registrarResultado(this.partidoActual.id, goles1, goles2);
+      
+      if (exito) {
+        this.cerrarModalResultado();
+        this.mostrarCuadroEliminatorias();
+        this.mostrarPartidosFaseActual();
+        this.actualizarEstado();
+        
+        console.log('✅ Resultado guardado:', `${goles1}-${goles2}`);
+      } else {
+        alert('Error al guardar el resultado');
+      }
+    }
+
+    private simularFaseActual(): void {
+      if (!this.sistema) return;
+
+      const faseActual = this.obtenerFaseActual();
+      if (!faseActual) return;
+
+      const partidos = this.sistema.obtenerPartidosFase(faseActual)
+        .filter(p => p.fase === faseActual && p.estado === 'programado');
+
+      partidos.forEach(partido => {
+        const goles1 = Math.floor(Math.random() * 5);
+        const goles2 = Math.floor(Math.random() * 5);
+        this.sistema!.registrarResultado(partido.id, goles1, goles2);
+      });
+
+      this.mostrarCuadroEliminatorias();
+      this.mostrarPartidosFaseActual();
+      this.actualizarEstado();
+      
+      console.log('🎲 Fase simulada:', faseActual);
+    }
+
+    private avanzarFase(): void {
+      if (!this.sistema) return;
+
+      const faseActual = this.obtenerFaseActual();
+      if (!faseActual) return;
+
+      this.sistema.avanzarGanadores(faseActual);
+      
+      this.mostrarCuadroEliminatorias();
+      this.mostrarPartidosFaseActual();
+      this.actualizarEstado();
+      
+      console.log('➡️ Avanzando desde:', faseActual);
+    }
+
+    private obtenerFaseActual(): string | null {
+      if (!this.sistema) return null;
+
+      const fases = this.sistema.obtenerTodasLasFases();
+      
+      for (const [nombre, fase] of fases.entries()) {
+        if (!fase.completada && fase.partidos.some(p => p.estado === 'programado')) {
+          return nombre;
+        }
+      }
+
+      return null;
+    }
+
+    private actualizarConfiguracion(): void {
+      const tipoPartidos = (document.getElementById('tipo-partidos') as HTMLSelectElement).value;
+      this.configuracion.partidosGrupo = tipoPartidos as 'ida' | 'ida-vuelta';
+    }
+
+    private cambiarModoClasificados(): void {
+      const modo = (document.getElementById('modo-clasificados') as HTMLSelectElement).value;
+      
+      if (modo === 'manual') {
+        this.mostrarSelectorClasificados();
+      }
+    }
+
+    private resetearSistema(): void {
+      if (confirm('¿Está seguro que desea resetear el sistema de eliminatorias?')) {
+        this.sistema = null;
+        this.partidoActual = null;
+        
+        // Ocultar elementos
+        document.getElementById('cuadro-eliminatorias')!.style.display = 'none';
+        document.getElementById('partidos-fase-actual')!.style.display = 'none';
+        
+        this.actualizarEstado();
+        console.log('🔄 Sistema reseteado');
+      }
+    }
+  }
+
+  // Inicializar la aplicación
+  document.addEventListener('DOMContentLoaded', () => {
+    new EliminatoriasApp();
+  });
+</script>
+
+<style>
+  /* Animaciones */
+  .container > div {
+    animation: slideInDown 0.6s ease-out forwards;
+  }
+
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Efectos hover */
+  button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Transiciones suaves */
+  .transition-colors {
+    transition: all 0.3s ease;
+  }
+
+  /* Scroll personalizado */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(51, 65, 85);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(59, 130, 246);
+    border-radius: 3px;
+  }
+</style>
+</Layout>

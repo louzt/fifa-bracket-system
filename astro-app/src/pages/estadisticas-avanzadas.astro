@@ -1,0 +1,1057 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Estadísticas Avanzadas - FIFA Tournament">
+  <div class="container mx-auto px-6 py-8 min-h-screen">
+    <SectionHeader 
+      title="📊 Estadísticas Avanzadas" 
+      subtitle="Análisis completo del rendimiento en el torneo"
+    />
+
+    <!-- Dashboard Principal -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total de Partidos -->
+      <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-blue-100 text-sm font-medium">Total Partidos</h3>
+            <p id="total-partidos" class="text-3xl font-bold">0</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-500/30 rounded-lg flex items-center justify-center">
+            ⚽
+          </div>
+        </div>
+      </div>
+
+      <!-- Total de Goles -->
+      <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-green-100 text-sm font-medium">Total Goles</h3>
+            <p id="total-goles" class="text-3xl font-bold">0</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/30 rounded-lg flex items-center justify-center">
+            🥅
+          </div>
+        </div>
+      </div>
+
+      <!-- Promedio por Partido -->
+      <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-purple-100 text-sm font-medium">Promedio/Partido</h3>
+            <p id="promedio-goles" class="text-3xl font-bold">0.0</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500/30 rounded-lg flex items-center justify-center">
+            📈
+          </div>
+        </div>
+      </div>
+
+      <!-- Máximo Goleador -->
+      <div class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-white">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-yellow-100 text-sm font-medium">Máximo Goleador</h3>
+            <p id="max-goleador" class="text-lg font-bold truncate">-</p>
+            <p id="max-goles" class="text-sm text-yellow-200">0 goles</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-500/30 rounded-lg flex items-center justify-center">
+            🏆
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros y Controles -->
+    <div class="bg-slate-800/80 rounded-xl p-6 mb-8 border border-slate-600/50">
+      <div class="flex flex-wrap items-center gap-4 mb-4">
+        <h2 class="text-xl font-bold text-white">🔍 Filtros</h2>
+        <select id="filtro-tipo" class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+          <option value="todos">Todos los Partidos</option>
+          <option value="grupo">Solo Fase de Grupos</option>
+          <option value="eliminatoria">Solo Eliminatorias</option>
+        </select>
+        <input type="text" id="buscar-jugador" placeholder="Buscar jugador..." 
+               class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400">
+        <button id="btn-actualizar" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          🔄 Actualizar
+        </button>
+        <button id="btn-exportar" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+          📊 Exportar
+        </button>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <!-- Tabla de Posiciones Generales -->
+      <div class="xl:col-span-2">
+        <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+          <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+            <span class="mr-2">🏅</span> Clasificación General
+          </h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-600 text-gray-400">
+                  <th class="text-left py-3 px-2">#</th>
+                  <th class="text-left py-3 px-2">Jugador</th>
+                  <th class="text-left py-3 px-2">Equipo</th>
+                  <th class="text-center py-3 px-2">PJ</th>
+                  <th class="text-center py-3 px-2">V</th>
+                  <th class="text-center py-3 px-2">E</th>
+                  <th class="text-center py-3 px-2">D</th>
+                  <th class="text-center py-3 px-2">GF</th>
+                  <th class="text-center py-3 px-2">GC</th>
+                  <th class="text-center py-3 px-2">DG</th>
+                  <th class="text-center py-3 px-2">Pts</th>
+                  <th class="text-center py-3 px-2">Prom</th>
+                  <th class="text-center py-3 px-2">%V</th>
+                  <th class="text-center py-3 px-2">Racha</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-clasificacion">
+                <!-- Las filas se generarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bota de Oro Fase de Grupos -->
+      <div>
+        <div class="bg-gradient-to-r from-yellow-600/20 to-yellow-700/20 border border-yellow-500/50 rounded-xl p-6 mb-6">
+          <h2 class="text-xl font-bold text-yellow-100 mb-4 flex items-center">
+            <span class="mr-2">🥇</span> Bota de Oro Fase de Grupos
+          </h2>
+          <div id="bota-oro-grupos" class="bg-slate-800/60 rounded-lg p-4">
+            <div class="text-center">
+              <div id="bota-oro-nombre" class="text-2xl font-bold text-yellow-300 mb-2">-</div>
+              <div id="bota-oro-goles" class="text-lg text-yellow-100 mb-1">0 goles en fase de grupos</div>
+              <div id="bota-oro-equipo" class="text-sm text-yellow-200">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Goleadores (Torneo Completo) -->
+        <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50 mb-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <span class="mr-2">⚽</span> Top Goleadores (Torneo Completo)
+          </h2>
+          <div id="top-goleadores" class="space-y-3">
+            <!-- Lista de goleadores se generará aquí -->
+          </div>
+        </div>
+
+        <!-- Guantes de Oro -->
+        <div class="bg-gradient-to-r from-blue-600/20 to-cyan-700/20 border border-blue-500/50 rounded-xl p-6 mb-6">
+          <h2 class="text-xl font-bold text-blue-100 mb-4 flex items-center">
+            <span class="mr-2">🧤</span> Guantes de Oro
+          </h2>
+          <div id="guantes-oro" class="bg-slate-800/60 rounded-lg p-4">
+            <div class="text-center">
+              <div id="guantes-oro-nombre" class="text-2xl font-bold text-blue-300 mb-2">-</div>
+              <div id="guantes-oro-goles" class="text-lg text-blue-100 mb-1">0 goles recibidos</div>
+              <div id="guantes-oro-equipo" class="text-sm text-blue-200 mb-1">-</div>
+              <div id="guantes-oro-promedio" class="text-xs text-gray-400">Promedio: 0.0 por partido</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mejor Equipo -->
+        <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50 mb-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <span class="mr-2">🏆</span> Equipos Más Efectivos
+          </h2>
+          <div id="ranking-equipos" class="space-y-3">
+            <!-- Ranking de equipos se generará aquí -->
+          </div>
+        </div>
+
+        <!-- Récords y Curiosidades -->
+        <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50 mb-6">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <span class="mr-2">📈</span> Récords
+          </h2>
+          <div id="records" class="space-y-3">
+            <!-- Récords se generarán aquí -->
+          </div>
+        </div>
+
+        <!-- Reconocimientos Especiales -->
+        <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+          <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <span class="mr-2">🏅</span> Reconocimientos Especiales
+          </h2>
+          <div id="reconocimientos" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Reconocimientos se generarán aquí -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficos y Análisis Avanzado -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Historial de Rendimiento -->
+      <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+          <span class="mr-2">📊</span> Análisis de Rendimiento
+        </h2>
+        <div id="analisis-rendimiento">
+          <!-- Gráfico de rendimiento se mostrará aquí -->
+        </div>
+      </div>
+
+      <!-- Enfrentamientos Directos -->
+      <div class="bg-slate-800/80 rounded-xl p-6 border border-slate-600/50">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+          <span class="mr-2">⚔️</span> Comparador de Jugadores
+        </h2>
+        <div class="space-y-4">
+          <div class="flex gap-3">
+            <select id="jugador-1" class="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+              <option value="">Seleccionar Jugador 1</option>
+            </select>
+            <span class="self-center text-gray-400">VS</span>
+            <select id="jugador-2" class="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white">
+              <option value="">Seleccionar Jugador 2</option>
+            </select>
+          </div>
+          <div id="comparacion-resultado" class="text-white">
+            <!-- Resultado de comparación se mostrará aquí -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Detalles -->
+    <div id="modal-detalles" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="display: none;">
+      <div class="bg-slate-800 rounded-xl p-6 max-w-2xl mx-4 border border-blue-500/30 max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="modal-titulo" class="text-xl font-bold text-white"></h3>
+          <button id="btn-cerrar-modal" class="text-gray-400 hover:text-white">✕</button>
+        </div>
+        <div id="modal-contenido" class="text-white">
+          <!-- Contenido del modal se generará aquí -->
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { SistemaEstadisticas, generarReporteCompleto } from '../scripts/sistemaEstadisticas';
+  import type { Jugador, Partido } from '../types/index';
+
+  class EstadisticasApp {
+    private partidos: Partido[] = [];
+    private jugadores: Jugador[] = [];
+    private sistema: SistemaEstadisticas | null = null;
+    private reporte: any = null;
+
+    constructor() {
+      this.inicializar();
+    }
+
+    private async inicializar(): Promise<void> {
+      await this.cargarDatos();
+      this.configurarEventos();
+      this.actualizarEstadisticas();
+    }
+
+    private async cargarDatos(): Promise<void> {
+      try {
+        const [partidosResponse, jugadoresResponse] = await Promise.all([
+          fetch('/api/partidos'),
+          fetch('/api/jugadores')
+        ]);
+
+        this.partidos = await partidosResponse.json();
+        this.jugadores = await jugadoresResponse.json();
+
+        // Filtrar solo partidos jugados
+        this.partidos = this.partidos.filter(p => 
+          p.golesJugador1 !== undefined && p.golesJugador2 !== undefined
+        );
+
+        console.log('✅ Datos cargados:', {
+          partidos: this.partidos.length,
+          jugadores: this.jugadores.length
+        });
+      } catch (error) {
+        console.error('❌ Error cargando datos:', error);
+      }
+    }
+
+    private configurarEventos(): void {
+      // Filtros
+      document.getElementById('filtro-tipo')?.addEventListener('change', () => {
+        this.actualizarEstadisticas();
+      });
+
+      document.getElementById('buscar-jugador')?.addEventListener('input', () => {
+        this.filtrarTabla();
+      });
+
+      // Botones
+      document.getElementById('btn-actualizar')?.addEventListener('click', async () => {
+        await this.cargarDatos();
+        this.actualizarEstadisticas();
+      });
+
+      document.getElementById('btn-exportar')?.addEventListener('click', () => {
+        this.exportarEstadisticas();
+      });
+
+      // Comparador
+      document.getElementById('jugador-1')?.addEventListener('change', () => {
+        this.compararJugadores();
+      });
+
+      document.getElementById('jugador-2')?.addEventListener('change', () => {
+        this.compararJugadores();
+      });
+
+      // Modal
+      document.getElementById('btn-cerrar-modal')?.addEventListener('click', () => {
+        this.cerrarModal();
+      });
+    }
+
+    private actualizarEstadisticas(): void {
+      if (this.partidos.length === 0) {
+        this.mostrarMensajeVacio();
+        return;
+      }
+
+      // Filtrar partidos según selección
+      const filtro = (document.getElementById('filtro-tipo') as HTMLSelectElement)?.value || 'todos';
+      let partidosFiltrados = this.partidos;
+      
+      if (filtro === 'grupo') {
+        partidosFiltrados = this.partidos.filter(p => p.tipo === 'grupo');
+      } else if (filtro === 'eliminatoria') {
+        partidosFiltrados = this.partidos.filter(p => p.tipo === 'eliminatoria');
+      }
+
+      this.sistema = new SistemaEstadisticas(partidosFiltrados, this.jugadores);
+      this.reporte = generarReporteCompleto(partidosFiltrados, this.jugadores);
+
+      this.actualizarDashboard();
+      this.actualizarTablaClasificacion();
+      this.actualizarBotaOroGrupos();
+      this.actualizarGuantesOro();
+      this.actualizarTopGoleadores();
+      this.actualizarRankingEquipos();
+      this.actualizarRecords();
+      this.actualizarReconocimientos();
+      this.cargarJugadoresComparador();
+    }
+
+    private actualizarDashboard(): void {
+      if (!this.reporte) return;
+
+      const { generales } = this.reporte;
+
+      // Actualizar cards del dashboard
+      this.actualizarElemento('total-partidos', generales.totalPartidos.toString());
+      this.actualizarElemento('total-goles', generales.totalGoles.toString());
+      this.actualizarElemento('promedio-goles', generales.promedioGolesPorPartido.toString());
+      
+      if (this.reporte.goleadores.length > 0) {
+        const topGoleador = this.reporte.goleadores[0];
+        this.actualizarElemento('max-goleador', topGoleador.nombre);
+        this.actualizarElemento('max-goles', `${topGoleador.goles} goles`);
+      }
+    }
+
+    private actualizarTablaClasificacion(): void {
+      const tbody = document.getElementById('tabla-clasificacion');
+      if (!tbody || !this.reporte) return;
+
+      tbody.innerHTML = '';
+
+      this.reporte.jugadores.forEach((jugador: any, index: number) => {
+        const fila = document.createElement('tr');
+        fila.className = `border-b border-slate-700 hover:bg-slate-700/30 transition-colors ${
+          index < 3 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent' : ''
+        }`;
+
+        // Determinar color de posición
+        let colorPosicion = 'text-white';
+        if (index === 0) colorPosicion = 'text-yellow-400 font-bold';
+        else if (index === 1) colorPosicion = 'text-gray-300 font-bold';
+        else if (index === 2) colorPosicion = 'text-yellow-600 font-bold';
+
+        fila.innerHTML = `
+          <td class="py-3 px-2 ${colorPosicion}">${index + 1}</td>
+          <td class="py-3 px-2 text-white font-medium">${jugador.nombre}</td>
+          <td class="py-3 px-2 text-blue-400 text-xs">${jugador.equipo || 'N/A'}</td>
+          <td class="py-3 px-2 text-center text-white">${jugador.partidosJugados}</td>
+          <td class="py-3 px-2 text-center text-green-400">${jugador.victorias}</td>
+          <td class="py-3 px-2 text-center text-yellow-400">${jugador.empates}</td>
+          <td class="py-3 px-2 text-center text-red-400">${jugador.derrotas}</td>
+          <td class="py-3 px-2 text-center text-white">${jugador.golesAFavor}</td>
+          <td class="py-3 px-2 text-center text-white">${jugador.golesEnContra}</td>
+          <td class="py-3 px-2 text-center ${jugador.diferenciadeGoles >= 0 ? 'text-green-400' : 'text-red-400'}">${jugador.diferenciadeGoles >= 0 ? '+' : ''}${jugador.diferenciadeGoles}</td>
+          <td class="py-3 px-2 text-center text-blue-400 font-bold">${jugador.puntos}</td>
+          <td class="py-3 px-2 text-center text-white">${jugador.promedioGoles}</td>
+          <td class="py-3 px-2 text-center text-white">${jugador.porcentajeVictorias}%</td>
+          <td class="py-3 px-2 text-center">
+            <span class="text-xs font-mono bg-slate-600 px-1 py-0.5 rounded">${jugador.rachaActual || '-'}</span>
+          </td>
+        `;
+
+        // Evento click para mostrar detalles
+        fila.addEventListener('click', () => {
+          this.mostrarDetallesJugador(jugador);
+        });
+        fila.style.cursor = 'pointer';
+
+        tbody.appendChild(fila);
+      });
+    }
+
+    private actualizarTopGoleadores(): void {
+      const container = document.getElementById('top-goleadores');
+      if (!container || !this.reporte) return;
+
+      container.innerHTML = '';
+
+      this.reporte.goleadores.slice(0, 5).forEach((goleador: any, index: number) => {
+        const elemento = document.createElement('div');
+        elemento.className = 'flex items-center justify-between p-3 bg-slate-700/50 rounded-lg';
+        
+        const medalla = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        
+        elemento.innerHTML = `
+          <div class="flex items-center">
+            <span class="mr-3 text-lg">${medalla}</span>
+            <div>
+              <div class="text-white font-medium">${goleador.nombre}</div>
+              <div class="text-gray-400 text-sm">${goleador.partidos} partidos</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-green-400 font-bold">${goleador.goles} goles</div>
+            <div class="text-gray-400 text-sm">${goleador.promedioGoles}/partido</div>
+          </div>
+        `;
+        
+        container.appendChild(elemento);
+      });
+    }
+
+    private actualizarBotaOroGrupos(): void {
+      const nombreElement = document.getElementById('bota-oro-nombre');
+      const golesElement = document.getElementById('bota-oro-goles');
+      const equipoElement = document.getElementById('bota-oro-equipo');
+      
+      if (!nombreElement || !golesElement || !equipoElement) return;
+
+      // Filtrar partidos de fase de grupos
+      const partidosGrupos = this.partidos.filter(p => p.grupo && (p.tipo === 'grupo' || !p.tipo));
+      
+      if (partidosGrupos.length === 0) {
+        nombreElement.textContent = 'Sin datos';
+        golesElement.textContent = 'No hay partidos de grupos';
+        equipoElement.textContent = '';
+        return;
+      }
+
+      // Calcular goles por jugador en fase de grupos
+      const golesJugadoresGrupos = new Map<string, { nombre: string, goles: number, equipo?: string }>();
+      
+      partidosGrupos.forEach(partido => {
+        if (partido.golesJugador1 !== undefined) {
+          const jugador1 = this.jugadores.find(j => j._id === partido.jugador1);
+          if (jugador1) {
+            const key = jugador1._id;
+            const current = golesJugadoresGrupos.get(key) || { nombre: jugador1.nombre, goles: 0, equipo: jugador1.equipo?.toString() };
+            current.goles += partido.golesJugador1;
+            golesJugadoresGrupos.set(key, current);
+          }
+        }
+        
+        if (partido.golesJugador2 !== undefined) {
+          const jugador2 = this.jugadores.find(j => j._id === partido.jugador2);
+          if (jugador2) {
+            const key = jugador2._id;
+            const current = golesJugadoresGrupos.get(key) || { nombre: jugador2.nombre, goles: 0, equipo: jugador2.equipo?.toString() };
+            current.goles += partido.golesJugador2;
+            golesJugadoresGrupos.set(key, current);
+          }
+        }
+      });
+
+      // Encontrar al máximo goleador de la fase de grupos
+      let maxGoleador = { nombre: 'Sin datos', goles: 0, equipo: '' };
+      
+      for (const [_, jugador] of golesJugadoresGrupos) {
+        if (jugador.goles > maxGoleador.goles) {
+          maxGoleador = {
+            nombre: jugador.nombre,
+            goles: jugador.goles,
+            equipo: jugador.equipo || ''
+          };
+        }
+      }
+
+      // Actualizar la UI
+      nombreElement.textContent = maxGoleador.nombre;
+      golesElement.textContent = `${maxGoleador.goles} goles en fase de grupos`;
+      equipoElement.textContent = maxGoleador.equipo || 'Sin equipo';
+    }
+
+    private actualizarGuantesOro(): void {
+      const nombreElement = document.getElementById('guantes-oro-nombre');
+      const golesElement = document.getElementById('guantes-oro-goles');
+      const equipoElement = document.getElementById('guantes-oro-equipo');
+      const promedioElement = document.getElementById('guantes-oro-promedio');
+      
+      if (!nombreElement || !golesElement || !equipoElement || !promedioElement) return;
+
+      // Calcular goles recibidos por jugador
+      const golesRecibidosJugadores = new Map<string, { nombre: string, golesRecibidos: number, partidos: number, equipo?: string }>();
+      
+      this.partidos.forEach(partido => {
+        // Goles recibidos por jugador 1
+        if (partido.golesJugador2 !== undefined) {
+          const jugador1 = this.jugadores.find(j => j._id === partido.jugador1);
+          if (jugador1) {
+            const key = jugador1._id;
+            const current = golesRecibidosJugadores.get(key) || { 
+              nombre: jugador1.nombre, 
+              golesRecibidos: 0, 
+              partidos: 0, 
+              equipo: jugador1.equipo?.toString() 
+            };
+            current.golesRecibidos += partido.golesJugador2;
+            current.partidos += 1;
+            golesRecibidosJugadores.set(key, current);
+          }
+        }
+        
+        // Goles recibidos por jugador 2
+        if (partido.golesJugador1 !== undefined) {
+          const jugador2 = this.jugadores.find(j => j._id === partido.jugador2);
+          if (jugador2) {
+            const key = jugador2._id;
+            const current = golesRecibidosJugadores.get(key) || { 
+              nombre: jugador2.nombre, 
+              golesRecibidos: 0, 
+              partidos: 0, 
+              equipo: jugador2.equipo?.toString() 
+            };
+            current.golesRecibidos += partido.golesJugador1;
+            current.partidos += 1;
+            golesRecibidosJugadores.set(key, current);
+          }
+        }
+      });
+
+      // Encontrar al mejor arquero (menos goles recibidos)
+      let mejorArquero = { nombre: 'Sin datos', golesRecibidos: 999, partidos: 0, equipo: '', promedio: 0 };
+      
+      for (const [_, jugador] of golesRecibidosJugadores) {
+        if (jugador.partidos > 0 && jugador.golesRecibidos < mejorArquero.golesRecibidos) {
+          mejorArquero = {
+            nombre: jugador.nombre,
+            golesRecibidos: jugador.golesRecibidos,
+            partidos: jugador.partidos,
+            equipo: jugador.equipo || '',
+            promedio: jugador.partidos > 0 ? +(jugador.golesRecibidos / jugador.partidos).toFixed(1) : 0
+          };
+        }
+      }
+
+      // Actualizar la UI
+      if (mejorArquero.golesRecibidos === 999) {
+        nombreElement.textContent = 'Sin datos';
+        golesElement.textContent = 'No hay partidos jugados';
+        equipoElement.textContent = '';
+        promedioElement.textContent = '';
+      } else {
+        nombreElement.textContent = mejorArquero.nombre;
+        golesElement.textContent = `${mejorArquero.golesRecibidos} goles recibidos`;
+        equipoElement.textContent = mejorArquero.equipo || 'Sin equipo';
+        promedioElement.textContent = `Promedio: ${mejorArquero.promedio} por partido`;
+      }
+    }
+
+    private actualizarRankingEquipos(): void {
+      const container = document.getElementById('ranking-equipos');
+      if (!container || !this.reporte) return;
+
+      container.innerHTML = '';
+
+      this.reporte.equipos.slice(0, 5).forEach((equipo: any, index: number) => {
+        const elemento = document.createElement('div');
+        elemento.className = 'flex items-center justify-between p-3 bg-slate-700/50 rounded-lg';
+        
+        elemento.innerHTML = `
+          <div class="flex items-center">
+            <span class="mr-3 text-lg">${index + 1}.</span>
+            <div>
+              <div class="text-white font-medium">${equipo.equipo}</div>
+              <div class="text-gray-400 text-sm">${equipo.vecesUsado} veces usado</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-green-400 font-bold">${equipo.rendimiento}%</div>
+            <div class="text-gray-400 text-sm">${equipo.victorias}V-${equipo.empates}E-${equipo.derrotas}D</div>
+          </div>
+        `;
+        
+        container.appendChild(elemento);
+      });
+    }
+
+    private actualizarRecords(): void {
+      const container = document.getElementById('records');
+      if (!container || !this.reporte) return;
+
+      const { generales } = this.reporte;
+      
+      const records = [
+        {
+          icono: '⚽',
+          titulo: 'Partido con más goles',
+          valor: generales.partidoConMasGoles.partido,
+          detalle: `${generales.partidoConMasGoles.goles} goles`
+        },
+        {
+          icono: '💥',
+          titulo: 'Mayor goleada',
+          valor: `${generales.mayorGoleada.ganador} vs ${generales.mayorGoleada.perdedor}`,
+          detalle: generales.mayorGoleada.marcador
+        },
+        {
+          icono: '🏆',
+          titulo: 'Equipo más efectivo',
+          valor: generales.equipoMasEfectivo,
+          detalle: 'Mejor rendimiento'
+        },
+        {
+          icono: '📊',
+          titulo: 'Promedio de goles',
+          valor: `${generales.promedioGolesPorPartido} por partido`,
+          detalle: `${generales.totalGoles} goles totales`
+        }
+      ];
+
+      container.innerHTML = '';
+
+      records.forEach(record => {
+        const elemento = document.createElement('div');
+        elemento.className = 'p-3 bg-slate-700/50 rounded-lg';
+        
+        elemento.innerHTML = `
+          <div class="flex items-start">
+            <span class="mr-3 text-lg">${record.icono}</span>
+            <div class="flex-1">
+              <div class="text-gray-400 text-sm">${record.titulo}</div>
+              <div class="text-white font-medium">${record.valor}</div>
+              <div class="text-blue-400 text-sm">${record.detalle}</div>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(elemento);
+      });
+    }
+
+    private actualizarReconocimientos(): void {
+      const container = document.getElementById('reconocimientos');
+      if (!container || !this.reporte) return;
+
+      // Calcular estadísticas adicionales para reconocimientos
+      const partidosJugados = this.partidos.filter(p => 
+        p.golesJugador1 !== undefined && p.golesJugador2 !== undefined
+      );
+
+      // Calcular diferentes reconocimientos
+      const reconocimientos = this.calcularReconocimientosEspeciales(partidosJugados);
+
+      container.innerHTML = '';
+
+      reconocimientos.forEach(reconocimiento => {
+        const elemento = document.createElement('div');
+        elemento.className = `bg-gradient-to-r ${reconocimiento.colorClass} border ${reconocimiento.borderClass} rounded-lg p-4 text-center`;
+        
+        elemento.innerHTML = `
+          <div class="text-2xl mb-2">${reconocimiento.icono}</div>
+          <h5 class="font-bold ${reconocimiento.textColorClass} mb-1">${reconocimiento.titulo}</h5>
+          <div class="text-lg font-bold text-white mb-1">${reconocimiento.jugador}</div>
+          <div class="text-sm ${reconocimiento.detalleColorClass}">${reconocimiento.detalle}</div>
+        `;
+        
+        container.appendChild(elemento);
+      });
+    }
+
+    private calcularReconocimientosEspeciales(partidosJugados: any[]): any[] {
+      const statsJugadores: { [key: string]: any } = {};
+      
+      // Calcular estadísticas por jugador
+      partidosJugados.forEach(partido => {
+        [partido.jugador1, partido.jugador2].forEach((jugadorId, index) => {
+          if (!statsJugadores[jugadorId]) {
+            const jugador = this.jugadores.find(j => j._id === jugadorId);
+            statsJugadores[jugadorId] = {
+              nombre: jugador?.nombre || jugadorId,
+              equipo: jugador?.equipo?.toString() || '-',
+              goles: 0,
+              golesRecibidos: 0,
+              partidos: 0,
+              victorias: 0,
+              empates: 0,
+              derrotas: 0,
+              golesTotales: []
+            };
+          }
+
+          const stats = statsJugadores[jugadorId];
+          const golesAnotados = index === 0 ? partido.golesJugador1 : partido.golesJugador2;
+          const golesRecibidos = index === 0 ? partido.golesJugador2 : partido.golesJugador1;
+          
+          stats.goles += golesAnotados;
+          stats.golesRecibidos += golesRecibidos;
+          stats.partidos++;
+          stats.golesTotales.push(golesAnotados);
+          
+          if (golesAnotados > golesRecibidos) stats.victorias++;
+          else if (golesAnotados === golesRecibidos) stats.empates++;
+          else stats.derrotas++;
+        });
+      });
+
+      const jugadoresArray = Object.values(statsJugadores);
+
+      // Calcular reconocimientos
+      const reconocimientos = [];
+
+      // Máximo goleador en un partido
+      let maxGolesPartido = { jugador: '-', goles: 0 };
+      Object.values(statsJugadores).forEach((stats: any) => {
+        const maxGoles = Math.max(...(stats.golesTotales || [0]));
+        if (maxGoles > maxGolesPartido.goles) {
+          maxGolesPartido = { jugador: stats.nombre, goles: maxGoles };
+        }
+      });
+
+      reconocimientos.push({
+        icono: '🎯',
+        titulo: 'MÁXIMO GOLES EN UN PARTIDO',
+        jugador: maxGolesPartido.jugador,
+        detalle: `${maxGolesPartido.goles} goles`,
+        colorClass: 'from-red-900/50 to-red-800/50',
+        borderClass: 'border-red-500/50',
+        textColorClass: 'text-red-400',
+        detalleColorClass: 'text-red-300'
+      });
+
+      // Más consistente (menos varianza en goles)
+      let masConsistente = { jugador: '-', varianza: 999 };
+      Object.values(statsJugadores).forEach((stats: any) => {
+        if (stats.partidos >= 3) {
+          const promedio = stats.goles / stats.partidos;
+          const varianza = stats.golesTotales.reduce((sum: number, goles: number) => 
+            sum + Math.pow(goles - promedio, 2), 0) / stats.partidos;
+          
+          if (varianza < masConsistente.varianza) {
+            masConsistente = { jugador: stats.nombre, varianza };
+          }
+        }
+      });
+
+      reconocimientos.push({
+        icono: '⚖️',
+        titulo: 'MÁS CONSISTENTE',
+        jugador: masConsistente.jugador,
+        detalle: 'Rendimiento equilibrado',
+        colorClass: 'from-green-900/50 to-emerald-900/50',
+        borderClass: 'border-green-500/50',
+        textColorClass: 'text-green-400',
+        detalleColorClass: 'text-green-300'
+      });
+
+      // Mejor diferencia de goles
+      const mejorDiferencia = jugadoresArray.reduce((max: any, jugador: any) => {
+        const diferencia = jugador.goles - jugador.golesRecibidos;
+        return diferencia > (max.goles - max.golesRecibidos) ? jugador : max;
+      }, jugadoresArray[0] || { nombre: '-', goles: 0, golesRecibidos: 0 });
+
+      reconocimientos.push({
+        icono: '💪',
+        titulo: 'MEJOR DIFERENCIA',
+        jugador: mejorDiferencia.nombre,
+        detalle: `+${mejorDiferencia.goles - mejorDiferencia.golesRecibidos} goles`,
+        colorClass: 'from-purple-900/50 to-violet-900/50',
+        borderClass: 'border-purple-500/50',
+        textColorClass: 'text-purple-400',
+        detalleColorClass: 'text-purple-300'
+      });
+
+      // Más partidos ganados
+      const masVictorias = jugadoresArray.reduce((max: any, jugador: any) => 
+        jugador.victorias > max.victorias ? jugador : max,
+        jugadoresArray[0] || { nombre: '-', victorias: 0 }
+      );
+
+      reconocimientos.push({
+        icono: '🏆',
+        titulo: 'MÁS VICTORIAS',
+        jugador: masVictorias.nombre,
+        detalle: `${masVictorias.victorias} victorias`,
+        colorClass: 'from-orange-900/50 to-amber-900/50',
+        borderClass: 'border-orange-500/50',
+        textColorClass: 'text-orange-400',
+        detalleColorClass: 'text-orange-300'
+      });
+
+      return reconocimientos;
+    }
+
+    private cargarJugadoresComparador(): void {
+      const select1 = document.getElementById('jugador-1') as HTMLSelectElement;
+      const select2 = document.getElementById('jugador-2') as HTMLSelectElement;
+      
+      if (!select1 || !select2) return;
+
+      const opciones = this.jugadores.map(j => 
+        `<option value="${j._id}">${j.nombre}</option>`
+      ).join('');
+
+      select1.innerHTML = '<option value="">Seleccionar Jugador 1</option>' + opciones;
+      select2.innerHTML = '<option value="">Seleccionar Jugador 2</option>' + opciones;
+    }
+
+    private compararJugadores(): void {
+      const select1 = document.getElementById('jugador-1') as HTMLSelectElement;
+      const select2 = document.getElementById('jugador-2') as HTMLSelectElement;
+      const resultado = document.getElementById('comparacion-resultado');
+      
+      if (!select1 || !select2 || !resultado || !this.sistema) return;
+
+      const jugador1Id = select1.value;
+      const jugador2Id = select2.value;
+
+      if (!jugador1Id || !jugador2Id) {
+        resultado.innerHTML = '<p class="text-gray-400">Selecciona ambos jugadores para comparar</p>';
+        return;
+      }
+
+      const historial = this.sistema.obtenerHistorialEnfrentamiento(jugador1Id, jugador2Id);
+      
+      resultado.innerHTML = `
+        <div class="bg-slate-700/50 rounded-lg p-4">
+          <h4 class="font-bold mb-3">${historial.jugador1} vs ${historial.jugador2}</h4>
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="text-green-400 font-bold text-xl">${historial.victoriasJ1}</div>
+              <div class="text-sm text-gray-400">Victorias ${historial.jugador1}</div>
+            </div>
+            <div>
+              <div class="text-yellow-400 font-bold text-xl">${historial.empates}</div>
+              <div class="text-sm text-gray-400">Empates</div>
+            </div>
+            <div>
+              <div class="text-red-400 font-bold text-xl">${historial.victoriasJ2}</div>
+              <div class="text-sm text-gray-400">Victorias ${historial.jugador2}</div>
+            </div>
+          </div>
+          <div class="mt-4 text-center">
+            <div class="text-white">Goles: ${historial.golesJ1} - ${historial.golesJ2}</div>
+            <div class="text-gray-400 text-sm">${historial.enfrentamientos} enfrentamientos totales</div>
+          </div>
+        </div>
+      `;
+    }
+
+    private mostrarDetallesJugador(jugador: any): void {
+      const modal = document.getElementById('modal-detalles');
+      const titulo = document.getElementById('modal-titulo');
+      const contenido = document.getElementById('modal-contenido');
+      
+      if (!modal || !titulo || !contenido) return;
+
+      titulo.textContent = `Estadísticas de ${jugador.nombre}`;
+      
+      contenido.innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-slate-700/50 rounded-lg p-4">
+              <h4 class="text-blue-400 font-bold mb-2">Rendimiento General</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span>Partidos Jugados:</span>
+                  <span class="font-bold">${jugador.partidosJugados}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Puntos:</span>
+                  <span class="font-bold text-blue-400">${jugador.puntos}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>% Victorias:</span>
+                  <span class="font-bold text-green-400">${jugador.porcentajeVictorias}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-slate-700/50 rounded-lg p-4">
+              <h4 class="text-green-400 font-bold mb-2">Goles</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span>Goles a Favor:</span>
+                  <span class="font-bold text-green-400">${jugador.golesAFavor}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Goles en Contra:</span>
+                  <span class="font-bold text-red-400">${jugador.golesEnContra}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Promedio:</span>
+                  <span class="font-bold">${jugador.promedioGoles}/partido</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          ${jugador.mejorVictoria ? `
+            <div class="bg-green-600/20 rounded-lg p-4">
+              <h4 class="text-green-400 font-bold mb-2">🏆 Mejor Victoria</h4>
+              <p>vs ${jugador.mejorVictoria.rival} (${jugador.mejorVictoria.goles})</p>
+            </div>
+          ` : ''}
+          
+          ${jugador.peorDerrota ? `
+            <div class="bg-red-600/20 rounded-lg p-4">
+              <h4 class="text-red-400 font-bold mb-2">💔 Peor Derrota</h4>
+              <p>vs ${jugador.peorDerrota.rival} (${jugador.peorDerrota.goles})</p>
+            </div>
+          ` : ''}
+          
+          <div class="bg-slate-700/50 rounded-lg p-4">
+            <h4 class="text-purple-400 font-bold mb-2">📈 Racha Actual</h4>
+            <div class="flex items-center gap-2">
+              ${jugador.rachaActual.split('-').map((resultado: string) => {
+                const color = resultado === 'V' ? 'bg-green-600' : 
+                             resultado === 'E' ? 'bg-yellow-600' : 'bg-red-600';
+                return `<span class="w-8 h-8 ${color} rounded-full flex items-center justify-center text-white text-sm font-bold">${resultado}</span>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      modal.style.display = 'flex';
+    }
+
+    private cerrarModal(): void {
+      const modal = document.getElementById('modal-detalles');
+      if (modal) modal.style.display = 'none';
+    }
+
+    private filtrarTabla(): void {
+      const busqueda = (document.getElementById('buscar-jugador') as HTMLInputElement)?.value.toLowerCase() || '';
+      const filas = document.querySelectorAll('#tabla-clasificacion tr');
+      
+      filas.forEach(fila => {
+        const nombre = fila.querySelector('td:nth-child(2)')?.textContent?.toLowerCase() || '';
+        const equipo = fila.querySelector('td:nth-child(3)')?.textContent?.toLowerCase() || '';
+        
+        if (nombre.includes(busqueda) || equipo.includes(busqueda)) {
+          (fila as HTMLElement).style.display = '';
+        } else {
+          (fila as HTMLElement).style.display = 'none';
+        }
+      });
+    }
+
+    private exportarEstadisticas(): void {
+      if (!this.reporte) return;
+
+      const datos = {
+        fechaExportacion: new Date().toISOString(),
+        resumen: this.reporte.generales,
+        clasificacion: this.reporte.jugadores,
+        goleadores: this.reporte.goleadores,
+        equipos: this.reporte.equipos
+      };
+
+      const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `estadisticas-fifa-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    private mostrarMensajeVacio(): void {
+      const tbody = document.getElementById('tabla-clasificacion');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="14" class="text-center py-8 text-gray-400">
+              <div class="flex flex-col items-center">
+                <span class="text-4xl mb-2">📊</span>
+                <p>No hay partidos jugados aún</p>
+                <p class="text-sm">Las estadísticas aparecerán cuando se completen algunos partidos</p>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    private actualizarElemento(id: string, valor: string): void {
+      const elemento = document.getElementById(id);
+      if (elemento) elemento.textContent = valor;
+    }
+  }
+
+  // Inicializar la aplicación
+  document.addEventListener('DOMContentLoaded', () => {
+    new EstadisticasApp();
+  });
+</script>
+
+<style>
+  /* Animaciones */
+  .container > div {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Tabla responsive */
+  .overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(59, 130, 246) rgb(51, 65, 85);
+  }
+
+  /* Hover effects */
+  button:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Modal styles */
+  #modal-detalles {
+    backdrop-filter: blur(4px);
+  }
+</style>
+</Layout>

@@ -1,0 +1,1787 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Gestión de Grupos - FIFA Tournament" description="Configuración completa de grupos y eliminatorias del torneo">
+  <div class="space-y-8">
+    <SectionHeader
+      title="🏆 Sistema de Grupos"
+      subtitle="Configuración completa de grupos, eliminatorias y modalidades del torneo"
+    />
+
+    <!-- Panel de migración -->
+    <div class="bg-yellow-600/20 border border-yellow-600/50 rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-yellow-400 font-semibold mb-1">🔄 Migración a Base de Datos</h3>
+          <p class="text-gray-300 text-sm">Configuraciones de grupos ahora se guardan en la base de datos</p>
+        </div>
+        <div class="flex space-x-2">
+          <button
+            id="btn-verificar-grupos"
+            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+          >
+            Verificar Datos
+          </button>
+          <button
+            id="btn-migrar-grupos"
+            class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm transition-colors"
+          >
+            Migrar Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+        <h3 class="text-lg font-semibold mb-2">Total Jugadores</h3>
+        <p class="text-3xl font-bold" id="total-jugadores">0</p>
+      </div>
+      <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 text-white">
+        <h3 class="text-lg font-semibold mb-2">Con Equipo</h3>
+        <p class="text-3xl font-bold" id="con-equipo">0</p>
+      </div>
+      <div class="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+        <h3 class="text-lg font-semibold mb-2">Grupos Configurados</h3>
+        <p class="text-3xl font-bold" id="num-grupos">0</p>
+      </div>
+      <div class="bg-gradient-to-r from-orange-600 to-orange-700 rounded-xl p-6 text-white">
+        <h3 class="text-lg font-semibold mb-2">Clasificados</h3>
+        <p class="text-3xl font-bold" id="total-clasificados">0</p>
+      </div>
+    </div>
+
+    <!-- Pestañas de navegación -->
+    <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+      <div class="flex flex-wrap border-b border-gray-700">
+        <button class="tab-button active" data-tab="configuracion">
+          ⚙️ Configuración
+        </button>
+        <button class="tab-button" data-tab="vista-previa">
+          👁️ Vista Previa
+        </button>
+        <button class="tab-button" data-tab="eliminatorias">
+          ⚔️ Eliminatorias
+        </button>
+        <button class="tab-button" data-tab="modalidades">
+          🎯 Modalidades
+        </button>
+      </div>
+
+      <!-- Contenido de las pestañas -->
+      <div class="p-6">
+        <!-- Pestaña de Configuración -->
+        <div id="tab-configuracion" class="tab-content active">
+          <div class="space-y-6">
+            <!-- Configuración principal -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Configuración de grupos -->
+              <div class="space-y-4">
+                <h3 class="text-xl font-bold text-white mb-4">🏆 Configuración de Grupos</h3>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Modo de Configuración</label>
+                  <select id="modo-grupos" class="input w-full">
+                    <option value="automatico">Automático (Recomendado)</option>
+                    <option value="manual">Manual</option>
+                  </select>
+                </div>
+
+                <div id="config-automatico">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Tamaño preferido de grupo</label>
+                      <select id="tamano-grupo" class="input w-full">
+                        <option value="4">4 jugadores por grupo</option>
+                        <option value="5">5 jugadores por grupo</option>
+                        <option value="3">3 jugadores por grupo</option>
+                        <option value="6">6 jugadores por grupo</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-300 mb-2">Clasificados por grupo</label>
+                      <select id="clasificados-grupo" class="input w-full">
+                        <option value="auto">🤖 Automático (Recomendado)</option>
+                        <option value="1">1 clasificado por grupo</option>
+                        <option value="2">2 clasificados por grupo</option>
+                        <option value="3">3 clasificados por grupo</option>
+                      </select>
+                      <div id="info-clasificados" class="mt-2 text-sm text-gray-400">
+                        El sistema determinará automáticamente la mejor cantidad de clasificados
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="config-manual" class="hidden">
+                  <div class="space-y-3">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Distribución manual de grupos</label>
+                    <div id="grupos-manuales" class="space-y-2">
+                      <!-- Se generará dinámicamente -->
+                    </div>
+                    <button id="agregar-grupo" class="btn btn-secondary btn-sm">
+                      ➕ Agregar Grupo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Configuración de partidos -->
+              <div class="space-y-4">
+                <h3 class="text-xl font-bold text-white mb-4">⚽ Configuración de Partidos</h3>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Tipo de fixture</label>
+                  <select id="tipo-fixture" class="input w-full">
+                    <option value="ida">Solo ida (Cada equipo juega 1 vez contra cada rival)</option>
+                    <option value="ida-vuelta">Ida y vuelta (Cada equipo juega 2 veces contra cada rival)</option>
+                  </select>
+                </div>
+
+                <div class="space-y-3">
+                  <h4 class="font-semibold text-gray-300">Restricciones</h4>
+                  <label class="flex items-center text-white">
+                    <input type="checkbox" id="solo-selecciones" class="mr-2 rounded bg-gray-700 border-gray-600">
+                    <span class="text-sm">Solo permitir selecciones nacionales (filtrar clubs)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex flex-wrap gap-4 pt-4 border-t border-gray-700">
+              <button id="btn-generar-grupos" class="btn btn-primary">
+                🏆 Generar Grupos
+              </button>
+              <button id="btn-regenerar-grupos" class="btn btn-secondary" disabled>
+                🔄 Regenerar Grupos
+              </button>
+              <button id="btn-reiniciar-config" class="btn btn-warning">
+                ↻ Reiniciar Configuración
+              </button>
+              <button id="btn-guardar-config" class="btn btn-success">
+                💾 Guardar Configuración
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña de Vista Previa -->
+        <div id="tab-vista-previa" class="tab-content hidden">
+          <div class="space-y-6">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xl font-bold text-white">👁️ Vista Previa de Grupos</h3>
+              <div class="text-sm text-gray-400" id="info-grupos">
+                No hay grupos configurados
+              </div>
+            </div>
+            
+            <!-- Contenedor de grupos -->
+            <div id="container-grupos" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div class="text-center text-gray-400 py-8 col-span-full">
+                <div class="text-4xl mb-4">📋</div>
+                <p>Configura y genera los grupos para ver la vista previa</p>
+              </div>
+            </div>
+
+            <!-- Información de partidos -->
+            <div id="info-partidos" class="hidden">
+              <h4 class="text-lg font-bold text-white mb-4">⚽ Fixture de Partidos</h4>
+              <div id="lista-partidos" class="space-y-2 max-h-60 overflow-y-auto">
+                <!-- Partidos se generarán aquí -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña de Eliminatorias -->
+        <div id="tab-eliminatorias" class="tab-content hidden">
+          <div class="space-y-6">
+            <h3 class="text-xl font-bold text-white">⚔️ Vista Previa de Eliminatorias</h3>
+            
+            <div id="preview-eliminatorias">
+              <div class="text-center text-gray-400 py-8">
+                <div class="text-4xl mb-4">🏆</div>
+                <p>Configura los grupos primero para ver la estructura de eliminatorias</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestaña de Modalidades -->
+        <div id="tab-modalidades" class="tab-content hidden">
+          <div class="space-y-6">
+            <h3 class="text-xl font-bold text-white">🎯 Modalidades de Eliminatorias</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Configuración de modalidad -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-300">Configuración de Modalidad</h4>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Tipo de eliminatorias</label>
+                  <select id="modalidad-eliminatorias" class="input w-full">
+                    <option value="automatico">Automático (según clasificados)</option>
+                    <option value="cuartos">Cuartos de Final</option>
+                    <option value="semifinales">Semifinales</option>
+                    <option value="final">Solo Final</option>
+                    <option value="personalizado">Personalizado</option>
+                  </select>
+                </div>
+
+                <div id="config-personalizada" class="hidden space-y-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Fases a incluir</label>
+                    <div class="space-y-2">
+                      <label class="flex items-center text-white">
+                        <input type="checkbox" id="incluir-octavos" class="mr-2 rounded bg-gray-700 border-gray-600">
+                        <span class="text-sm">Octavos de Final</span>
+                      </label>
+                      <label class="flex items-center text-white">
+                        <input type="checkbox" id="incluir-cuartos" class="mr-2 rounded bg-gray-700 border-gray-600" checked>
+                        <span class="text-sm">Cuartos de Final</span>
+                      </label>
+                      <label class="flex items-center text-white">
+                        <input type="checkbox" id="incluir-semifinales" class="mr-2 rounded bg-gray-700 border-gray-600" checked>
+                        <span class="text-sm">Semifinales</span>
+                      </label>
+                      <label class="flex items-center text-white">
+                        <input type="checkbox" id="incluir-final" class="mr-2 rounded bg-gray-700 border-gray-600" checked>
+                        <span class="text-sm">Final</span>
+                      </label>
+                      <label class="flex items-center text-white">
+                        <input type="checkbox" id="incluir-tercer-puesto" class="mr-2 rounded bg-gray-700 border-gray-600">
+                        <span class="text-sm">Partido por el 3er puesto</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">Método de clasificación</label>
+                  <select id="metodo-clasificacion" class="input w-full">
+                    <option value="posicion">Por posición en grupo</option>
+                    <option value="puntos">Por puntos totales</option>
+                    <option value="diferencia-goles">Por diferencia de goles</option>
+                  </select>
+                </div>
+
+                <!-- Configuración de Ida y Vuelta -->
+                <div class="space-y-3">
+                  <h4 class="text-lg font-semibold text-gray-300">⚔️ Configuración de Enfrentamientos</h4>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Modalidad por defecto</label>
+                    <select id="modalidad-default-eliminatorias" class="input w-full">
+                      <option value="ida-vuelta">Ida y Vuelta (Recomendado)</option>
+                      <option value="partido-unico">Partido Único</option>
+                    </select>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Configuración específica por fase:</label>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Semifinales</label>
+                        <select id="modo-semifinales" class="input w-full text-sm">
+                          <option value="ida-vuelta">Ida y Vuelta</option>
+                          <option value="partido-unico">Partido Único</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Cuartos de Final</label>
+                        <select id="modo-cuartos" class="input w-full text-sm">
+                          <option value="ida-vuelta">Ida y Vuelta</option>
+                          <option value="partido-unico">Partido Único</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Final</label>
+                        <select id="modo-final" class="input w-full text-sm">
+                          <option value="partido-unico" selected>Partido Único</option>
+                          <option value="ida-vuelta">Ida y Vuelta</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label class="block text-xs text-gray-400 mb-1">Tercer Puesto</label>
+                        <select id="modo-tercer-puesto" class="input w-full text-sm">
+                          <option value="partido-unico" selected>Partido Único</option>
+                          <option value="ida-vuelta">Ida y Vuelta</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3 mt-3">
+                    <div class="text-blue-300 text-sm">
+                      <strong>📋 Configuración Recomendada:</strong><br>
+                      • Semifinales y anteriores: Ida y Vuelta<br>
+                      • Final y Tercer Puesto: Partido Único<br>
+                      • Esto crea más emoción y permite remontadas
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Información de la modalidad -->
+              <div class="space-y-4">
+                <h4 class="text-lg font-semibold text-gray-300">Información de la Modalidad</h4>
+                <div id="info-modalidad" class="bg-gray-900/50 rounded-lg p-4 space-y-2">
+                  <div class="text-gray-400">Selecciona una modalidad para ver los detalles</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista previa de la estructura -->
+            <div id="estructura-eliminatorias" class="hidden">
+              <h4 class="text-lg font-semibold text-gray-300 mb-4">Estructura de Eliminatorias</h4>
+              <div id="diagrama-eliminatorias" class="bg-gray-900/50 rounded-lg p-6">
+                <!-- Diagrama se generará aquí -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
+      <h3 class="text-xl font-bold mb-4">🚀 Acciones Rápidas</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/jugadores" class="btn-quick-action">
+          👥 Gestionar Jugadores
+        </a>
+        <a href="/sorteo" class="btn-quick-action">
+          🎲 Ir al Sorteo
+        </a>
+        <button id="btn-iniciar-torneo" class="btn-quick-action" disabled>
+          🏆 Iniciar Torneo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación -->
+  <div id="modal-confirmacion" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full border border-gray-700">
+        <h3 id="modal-titulo" class="text-xl font-bold mb-4 text-white">Confirmar acción</h3>
+        <p id="modal-mensaje" class="text-gray-300 mb-6">¿Estás seguro?</p>
+        <div class="flex space-x-4">
+          <button id="btn-cancelar-modal" class="btn btn-secondary flex-1">
+            Cancelar
+          </button>
+          <button id="btn-confirmar-modal" class="btn btn-primary flex-1">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import type { Jugador } from '../types/index';
+
+  class GruposManager {
+    private jugadores: Jugador[] = [];
+    private grupos: any[] = [];
+    private configuracion: any = {
+      modo: 'automatico',
+      tamanoGrupo: 4,
+      clasificadosGrupo: 'auto',
+      tipoFixture: 'ida',
+      soloSelecciones: false,
+      equiposBalanceados: false,
+      modalidadEliminatorias: 'automatico',
+      // Configuración de ida y vuelta para eliminatorias
+      modalidadDefaultEliminatorias: 'ida-vuelta',
+      modoSemifinales: 'ida-vuelta',
+      modoCuartos: 'ida-vuelta',
+      modoFinal: 'partido-unico',
+      modoTercerPuesto: 'partido-unico'
+    };
+
+    constructor() {
+      this.inicializar();
+    }
+
+    private async inicializar(): Promise<void> {
+      await this.cargarJugadores();
+      this.configurarEventos();
+      this.configurarPestanas();
+      this.cargarConfiguracionGuardada();
+      this.actualizarEstadisticas();
+      this.actualizarInfoClasificados();
+      this.actualizarVistaPrevia();
+      this.actualizarVistaEliminatorias();
+    }
+
+    private async cargarJugadores(): Promise<void> {
+      try {
+        const response = await fetch('/api/jugadores');
+        const data = await response.json();
+        this.jugadores = data.filter((j: Jugador) => j.equipo);
+        console.log('Jugadores cargados:', this.jugadores.length);
+      } catch (error) {
+        console.error('Error cargando jugadores:', error);
+        this.jugadores = [];
+      }
+    }
+
+    private configurarEventos(): void {
+      // Configuración de grupos
+      document.getElementById('modo-grupos')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modo = target.value;
+        this.toggleConfiguracionManual(target.value === 'manual');
+      });
+
+      document.getElementById('tamano-grupo')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.tamanoGrupo = parseInt(target.value);
+        this.calcularGruposAutomaticos();
+        this.actualizarInfoClasificados();
+        this.actualizarVistaPrevia();
+        this.actualizarVistaEliminatorias();
+      });
+
+      document.getElementById('clasificados-grupo')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        if (target.value === 'auto') {
+          this.configuracion.clasificadosGrupo = 'auto';
+        } else {
+          this.configuracion.clasificadosGrupo = parseInt(target.value);
+        }
+        this.calcularGruposAutomaticos();
+        this.actualizarInfoClasificados();
+        this.actualizarVistaPrevia();
+        this.actualizarVistaEliminatorias();
+      });
+
+      // Modalidades de eliminatorias
+      document.getElementById('modalidad-eliminatorias')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modalidadEliminatorias = target.value;
+        this.toggleConfigPersonalizada(target.value === 'personalizado');
+        this.actualizarInfoModalidad();
+      });
+
+      // Configuración de ida y vuelta para eliminatorias
+      document.getElementById('modalidad-default-eliminatorias')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modalidadDefaultEliminatorias = target.value;
+        this.aplicarModalidadDefault(target.value);
+        this.guardarConfiguracion();
+        this.actualizarVistaEliminatorias(); // Actualizar vista previa
+      });
+
+      document.getElementById('modo-semifinales')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modoSemifinales = target.value;
+        this.guardarConfiguracion();
+        this.actualizarVistaEliminatorias(); // Actualizar vista previa
+      });
+
+      document.getElementById('modo-cuartos')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modoCuartos = target.value;
+        this.guardarConfiguracion();
+        this.actualizarVistaEliminatorias(); // Actualizar vista previa
+      });
+
+      document.getElementById('modo-final')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modoFinal = target.value;
+        this.guardarConfiguracion();
+        this.actualizarVistaEliminatorias(); // Actualizar vista previa
+      });
+
+      document.getElementById('modo-tercer-puesto')?.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        this.configuracion.modoTercerPuesto = target.value;
+        this.guardarConfiguracion();
+        this.actualizarVistaEliminatorias(); // Actualizar vista previa
+      });
+
+      // Botones principales
+      document.getElementById('btn-generar-grupos')?.addEventListener('click', () => this.generarGrupos());
+      document.getElementById('btn-regenerar-grupos')?.addEventListener('click', () => this.regenerarGrupos());
+      document.getElementById('btn-reiniciar-config')?.addEventListener('click', () => this.mostrarModalConfirmacion(
+        'Reiniciar Configuración', 
+        '¿Estás seguro de que quieres reiniciar toda la configuración? Se perderán todos los cambios no guardados.',
+        () => this.reiniciarConfiguracion()
+      ));
+      document.getElementById('btn-guardar-config')?.addEventListener('click', () => this.guardarConfiguracion());
+      document.getElementById('btn-iniciar-torneo')?.addEventListener('click', () => this.iniciarTorneo());
+
+      // Modal
+      document.getElementById('btn-cancelar-modal')?.addEventListener('click', () => this.cerrarModal());
+      document.getElementById('btn-confirmar-modal')?.addEventListener('click', () => this.ejecutarAccionModal());
+    }
+
+    private aplicarModalidadDefault(modalidad: string): void {
+      // Aplicar la modalidad por defecto a todas las fases excepto final y tercer puesto
+      if (modalidad === 'ida-vuelta') {
+        (document.getElementById('modo-semifinales') as HTMLSelectElement).value = 'ida-vuelta';
+        (document.getElementById('modo-cuartos') as HTMLSelectElement).value = 'ida-vuelta';
+        this.configuracion.modoSemifinales = 'ida-vuelta';
+        this.configuracion.modoCuartos = 'ida-vuelta';
+      } else {
+        (document.getElementById('modo-semifinales') as HTMLSelectElement).value = 'partido-unico';
+        (document.getElementById('modo-cuartos') as HTMLSelectElement).value = 'partido-unico';
+        this.configuracion.modoSemifinales = 'partido-unico';
+        this.configuracion.modoCuartos = 'partido-unico';
+      }
+    }
+
+    // Función pública para obtener la configuración de eliminatorias
+    public getConfiguracionEliminatorias() {
+      return {
+        modalidadDefault: this.configuracion.modalidadDefaultEliminatorias,
+        modoSemifinales: this.configuracion.modoSemifinales,
+        modoCuartos: this.configuracion.modoCuartos,
+        modoFinal: this.configuracion.modoFinal,
+        modoTercerPuesto: this.configuracion.modoTercerPuesto
+      };
+    }
+
+    // Función estática para obtener la configuración desde localStorage
+    public static getConfiguracionEliminatoriasDesdeStorage() {
+      const configGuardada = localStorage.getItem('gruposConfig');
+      if (configGuardada) {
+        try {
+          const config = JSON.parse(configGuardada);
+          return {
+            modalidadDefault: config.configuracion?.modalidadDefaultEliminatorias || 'ida-vuelta',
+            modoSemifinales: config.configuracion?.modoSemifinales || 'ida-vuelta',
+            modoCuartos: config.configuracion?.modoCuartos || 'ida-vuelta',
+            modoFinal: config.configuracion?.modoFinal || 'partido-unico',
+            modoTercerPuesto: config.configuracion?.modoTercerPuesto || 'partido-unico'
+          };
+        } catch (error) {
+          console.error('Error cargando configuración de eliminatorias:', error);
+        }
+      }
+      
+      // Configuración por defecto
+      return {
+        modalidadDefault: 'ida-vuelta',
+        modoSemifinales: 'ida-vuelta',
+        modoCuartos: 'ida-vuelta',
+        modoFinal: 'partido-unico',
+        modoTercerPuesto: 'partido-unico'
+      };
+    }
+
+    private configurarPestanas(): void {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetTab = button.getAttribute('data-tab');
+          
+          // Remover clases active
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          tabContents.forEach(content => content.classList.add('hidden'));
+
+          // Agregar clase active
+          button.classList.add('active');
+          document.getElementById(`tab-${targetTab}`)?.classList.remove('hidden');
+
+          // Actualizar contenido específico de la pestaña
+          if (targetTab === 'vista-previa') {
+            this.actualizarVistaPrevia();
+          } else if (targetTab === 'eliminatorias') {
+            this.actualizarVistaEliminatorias();
+          } else if (targetTab === 'modalidades') {
+            this.actualizarInfoModalidad();
+          }
+        });
+      });
+    }
+
+    private toggleConfiguracionManual(esManual: boolean): void {
+      const configAuto = document.getElementById('config-automatico');
+      const configManual = document.getElementById('config-manual');
+      
+      if (esManual) {
+        configAuto?.classList.add('hidden');
+        configManual?.classList.remove('hidden');
+        this.generarConfiguracionManual();
+      } else {
+        configAuto?.classList.remove('hidden');
+        configManual?.classList.add('hidden');
+        this.calcularGruposAutomaticos();
+      }
+    }
+
+    private toggleConfigPersonalizada(esPersonalizada: boolean): void {
+      const configPersonalizada = document.getElementById('config-personalizada');
+      if (esPersonalizada) {
+        configPersonalizada?.classList.remove('hidden');
+      } else {
+        configPersonalizada?.classList.add('hidden');
+      }
+    }
+
+    private calcularClasificadosOptimos(grupos: any[]): number {
+      if (grupos.length === 0) return 1;
+
+      // Obtener tamaños de grupos únicos
+      const tamanos = [...new Set(grupos.map(g => g.tamaño))];
+      const numGrupos = grupos.length;
+      
+      // Lógica inteligente para determinar clasificados
+      if (tamanos.length === 1) {
+        // Grupos homogéneos
+        const tamano = tamanos[0];
+        if (tamano >= 4 && numGrupos >= 3) {
+          return 2; // Con grupos de 4+ y 3+ grupos, clasificar 2 por grupo
+        } else if (tamano === 3 && numGrupos >= 3) {
+          return 2; // Con grupos de 3 y varios grupos, clasificar 2
+        }
+        return 1;
+      } else {
+        // Grupos mixtos (diferentes tamaños)
+        const tieneGruposDe4 = tamanos.some(t => t >= 4);
+        const tieneGruposDe3 = tamanos.some(t => t === 3);
+        
+        if (tieneGruposDe4 && tieneGruposDe3) {
+          return 2; // Configuración mixta: clasificar 2 por grupo para balance
+        }
+        return Math.min(2, Math.min(...tamanos) - 1); // No más clasificados que jugadores menos 1
+      }
+    }
+
+    private actualizarInfoClasificados(): void {
+      const infoDiv = document.getElementById('info-clasificados');
+      if (!infoDiv) return;
+
+      if (this.configuracion.clasificadosGrupo === 'auto') {
+        const clasificadosOptimos = this.getClasificadosEfectivos();
+        const totalClasificados = this.grupos.length * clasificadosOptimos;
+        
+        let razon = this.obtenerRazonAutomatica();
+        
+        infoDiv.innerHTML = `
+          <div class="bg-blue-900/20 border border-blue-600/30 rounded p-3">
+            <div class="text-blue-400 font-medium">
+              🤖 Automático: ${clasificadosOptimos} clasificado${clasificadosOptimos > 1 ? 's' : ''} por grupo
+            </div>
+            <div class="text-gray-300 text-xs mt-1">
+              ${razon} → Total: ${totalClasificados} clasificados
+            </div>
+          </div>
+        `;
+      } else {
+        const total = this.grupos.length * this.configuracion.clasificadosGrupo;
+        infoDiv.innerHTML = `
+          <div class="text-gray-400">
+            Configuración manual: ${this.configuracion.clasificadosGrupo} × ${this.grupos.length} grupos = ${total} clasificados
+          </div>
+        `;
+      }
+    }
+
+    private obtenerRazonAutomatica(): string {
+      const tamanos = [...new Set(this.grupos.map((g: any) => g.tamaño))];
+      const numGrupos = this.grupos.length;
+      
+      if (tamanos.length === 1) {
+        const tamano = tamanos[0];
+        if (tamano >= 4 && numGrupos >= 3) {
+          return `Grupos grandes (${tamano}) → Clasificar 2 genera mejor torneo`;
+        } else if (tamano === 3 && numGrupos >= 3) {
+          return `Múltiples grupos pequeños → 2 clasificados dan más emoción`;
+        }
+        return `Configuración estándar`;
+      } else {
+        return `Grupos mixtos (${tamanos.join(',')}) → Balance con 2 clasificados`;
+      }
+    }
+
+    private getClasificadosEfectivos(): number {
+      if (this.configuracion.clasificadosGrupo === 'auto') {
+        const clasificados = this.calcularClasificadosOptimos(this.grupos);
+        console.log('Clasificados automáticos calculados:', clasificados, 'para grupos:', this.grupos.length);
+        return clasificados;
+      }
+      console.log('Clasificados manuales:', this.configuracion.clasificadosGrupo);
+      return this.configuracion.clasificadosGrupo;
+    }
+
+    private calcularGruposAutomaticos(): void {
+      const totalJugadores = this.jugadores.length;
+      
+      if (totalJugadores === 0) {
+        this.actualizarEstadisticas();
+        return;
+      }
+
+      // Usar configuraciones optimizadas para 9 jugadores
+      const configuracionesOptimas: { [key: number]: { grupos: number; distribucion: number[] } } = {
+        8: { grupos: 2, distribucion: [4, 4] },
+        9: { grupos: 3, distribucion: [3, 3, 3] },
+        10: { grupos: 2, distribucion: [5, 5] },
+        11: { grupos: 2, distribucion: [6, 5] },
+        12: { grupos: 3, distribucion: [4, 4, 4] }
+      };
+
+      let configuracion;
+      if (configuracionesOptimas[totalJugadores]) {
+        // Usar configuración optimizada
+        configuracion = configuracionesOptimas[totalJugadores];
+      } else {
+        // Fallback al algoritmo original para otros casos
+        const tamanoGrupo = this.configuracion.tamanoGrupo;
+        const numGrupos = Math.ceil(totalJugadores / tamanoGrupo);
+        const jugadoresPorGrupo = Math.floor(totalJugadores / numGrupos);
+        const gruposConExtra = totalJugadores % numGrupos;
+        
+        const distribucion = [];
+        for (let i = 0; i < numGrupos; i++) {
+          distribucion.push(jugadoresPorGrupo + (i < gruposConExtra ? 1 : 0));
+        }
+        configuracion = { grupos: numGrupos, distribucion };
+      }
+
+      // Crear grupos con la configuración calculada
+      this.grupos = [];
+      for (let i = 0; i < configuracion.grupos; i++) {
+        this.grupos.push({
+          id: i + 1,
+          nombre: `Grupo ${String.fromCharCode(65 + i)}`,
+          tamaño: configuracion.distribucion[i],
+          jugadores: []
+        });
+      }
+
+      // Recalcular clasificados automáticamente si está en modo auto
+      if (this.configuracion.clasificadosGrupo === 'auto') {
+        this.actualizarInfoClasificados();
+      }
+
+      this.actualizarEstadisticas();
+    }
+
+    private generarConfiguracionManual(): void {
+      const container = document.getElementById('grupos-manuales');
+      if (!container) return;
+
+      container.innerHTML = this.grupos.map((grupo, index) => `
+        <div class="flex items-center space-x-4 p-3 bg-gray-700/30 rounded-lg">
+          <span class="text-white font-medium w-20">Grupo ${String.fromCharCode(65 + index)}</span>
+          <input type="number" 
+                 min="2" 
+                 max="8" 
+                 value="${grupo.tamaño}" 
+                 class="input w-24 text-center"
+                 data-grupo="${index}">
+          <span class="text-gray-400 text-sm">jugadores</span>
+          <button class="btn btn-danger btn-sm ml-auto" onclick="gruposManager.eliminarGrupo(${index})">
+            ✗
+          </button>
+        </div>
+      `).join('');
+    }
+
+    public eliminarGrupo(index: number): void {
+      this.grupos.splice(index, 1);
+      this.generarConfiguracionManual();
+      this.actualizarEstadisticas();
+    }
+
+    private async generarGrupos(): Promise<void> {
+      if (this.jugadores.length < 4) {
+        this.mostrarNotificacion('Se necesitan al menos 4 jugadores con equipos asignados', 'error');
+        return;
+      }
+
+      // Verificar que no hay jugadores duplicados en los grupos actuales
+      this.limpiarDuplicados();
+
+      // Mezclar jugadores aleatoriamente
+      const jugadoresMezclados = [...this.jugadores].sort(() => Math.random() - 0.5);
+      
+      // Limpiar grupos existentes
+      this.grupos.forEach(grupo => {
+        grupo.jugadores = [];
+      });
+      
+      // Asignar jugadores a grupos de manera única
+      let jugadorIndex = 0;
+      this.grupos.forEach(grupo => {
+        for (let i = 0; i < grupo.tamaño && jugadorIndex < jugadoresMezclados.length; i++) {
+          grupo.jugadores.push(jugadoresMezclados[jugadorIndex++]);
+        }
+      });
+
+      // Verificar que todos los jugadores fueron asignados
+      const jugadoresAsignados = this.grupos.reduce((total, grupo) => total + grupo.jugadores.length, 0);
+      const jugadoresUnicos = new Set(
+        this.grupos.flatMap(grupo => grupo.jugadores.map((j: any) => j.nombre || j.id))
+      ).size;
+
+      if (jugadoresAsignados !== jugadoresUnicos) {
+        console.error('Error: Hay jugadores duplicados en los grupos');
+        this.mostrarNotificacion('Error: Se detectaron jugadores duplicados', 'error');
+        return;
+      }
+
+      console.log(`Grupos generados correctamente: ${jugadoresAsignados} jugadores únicos asignados`);
+      
+      // Activar botón de regenerar
+      const btnRegenerar = document.getElementById('btn-regenerar-grupos') as HTMLButtonElement;
+      if (btnRegenerar) {
+        btnRegenerar.disabled = false;
+      }
+      
+      this.actualizarVistaPrevia();
+      this.actualizarVistaEliminatorias();
+      this.mostrarNotificacion('Grupos generados correctamente', 'success');
+      
+      // Guardar automáticamente la configuración
+      this.guardarConfiguracion();
+      
+      // Cambiar a la pestaña de vista previa
+      const tabButton = document.querySelector('[data-tab="vista-previa"]') as HTMLButtonElement;
+      tabButton?.click();
+    }
+
+    private async regenerarGrupos(): Promise<void> {
+      this.mostrarModalConfirmacion(
+        'Regenerar Grupos',
+        '¿Estás seguro de que quieres regenerar los grupos? Se mezclará a todos los jugadores nuevamente.',
+        () => this.generarGrupos()
+      );
+    }
+
+    private limpiarDuplicados(): void {
+      const jugadoresVistos = new Set<string>();
+      
+      this.grupos.forEach(grupo => {
+        if (grupo.jugadores) {
+          grupo.jugadores = grupo.jugadores.filter((jugador: any) => {
+            const id = jugador.nombre || jugador.id;
+            if (jugadoresVistos.has(id)) {
+              console.warn(`Jugador duplicado removido: ${id}`);
+              return false;
+            }
+            jugadoresVistos.add(id);
+            return true;
+          });
+        }
+      });
+    }
+
+    private actualizarVistaPrevia(): void {
+      const container = document.getElementById('container-grupos');
+      const infoGrupos = document.getElementById('info-grupos');
+      
+      if (!container || this.grupos.length === 0) {
+        if (container) {
+          container.innerHTML = `
+            <div class="text-center text-gray-400 py-8 col-span-full">
+              <div class="text-4xl mb-4">📋</div>
+              <p>Configura y genera los grupos para ver la vista previa</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      if (infoGrupos) {
+        infoGrupos.textContent = `${this.grupos.length} grupos configurados`;
+      }
+
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+
+      container.innerHTML = this.grupos.map((grupo, grupoIndex) => `
+        <div class="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+          <div class="text-center mb-4">
+            <h4 class="text-xl font-bold text-white mb-2">${grupo.nombre}</h4>
+            <div class="flex justify-center space-x-4 text-sm">
+              <span class="bg-blue-600/20 text-blue-400 px-2 py-1 rounded border border-blue-600/30">
+                ${grupo.tamaño || grupo.jugadores.length} jugadores
+              </span>
+              <span class="bg-green-600/20 text-green-400 px-2 py-1 rounded border border-green-600/30">
+                ${clasificadosEfectivos} clasifican
+                ${this.configuracion.clasificadosGrupo === 'auto' ? '(auto)' : ''}
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-3 mb-4">
+            ${grupo.jugadores.length > 0 ? grupo.jugadores.map((jugador: any, index: number) => {
+              const equipoId = typeof jugador.equipo === 'string' ? jugador.equipo : jugador.equipo?.id;
+              const equipoNombre = typeof jugador.equipo === 'string' ? jugador.equipo : jugador.equipo?.nombre || equipoId;
+              const esClasificado = index < clasificadosEfectivos;
+              
+              return `
+                <div class="flex items-center space-x-3 p-3 rounded-lg ${esClasificado ? 'bg-green-900/20 border border-green-700/50' : 'bg-gray-700/30'}">
+                  <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                    esClasificado ? 'bg-green-600' : 'bg-gray-600'
+                  }">
+                    ${index + 1}
+                  </span>
+                  <img src="/img/equipos/${equipoId}.png" 
+                       alt="${equipoNombre}" 
+                       class="w-8 h-8 object-contain"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                  <div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-sm" style="display:none;">⚽</div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-white font-medium truncate">${jugador.nombre}</p>
+                    <p class="text-gray-400 text-sm truncate">${equipoNombre?.replace('-', ' ')}</p>
+                  </div>
+                  ${esClasificado ? '<span class="text-green-400 text-xs font-semibold">✓ CLASIFICA</span>' : ''}
+                </div>
+              `;
+            }).join('') : Array.from({length: grupo.tamaño}, (_, index) => `
+              <div class="flex items-center space-x-3 p-3 rounded-lg ${index < this.configuracion.clasificadosGrupo ? 'bg-green-900/20 border border-green-700/50' : 'bg-gray-700/30'}">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                  index < this.configuracion.clasificadosGrupo ? 'bg-green-600' : 'bg-gray-600'
+                }">
+                  ${index + 1}
+                </span>
+                <div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-sm">⚽</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-gray-400 font-medium">Jugador ${index + 1}</p>
+                  <p class="text-gray-500 text-sm">Por asignar</p>
+                </div>
+                ${index < clasificadosEfectivos ? '<span class="text-green-400 text-xs font-semibold">✓ CLASIFICA</span>' : ''}
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="border-t border-gray-700 pt-3">
+            <div class="text-center text-gray-300 text-sm">
+              <div class="font-semibold mb-1">Destino en Eliminatorias:</div>
+              ${this.obtenerDestinoEliminatorias(grupoIndex)}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      this.generarFixturePartidos();
+    }
+
+    private obtenerDestinoEliminatorias(grupoIndex: number): string {
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+      const totalClasificados = this.grupos.length * clasificadosEfectivos;
+      const grupoLetra = String.fromCharCode(65 + grupoIndex);
+      
+      if (totalClasificados < 2) {
+        return '<span class="text-gray-500">Insuficientes clasificados</span>';
+      }
+
+      const enfrentamientos = this.calcularEnfrentamientosEspecificos();
+      const destinosGrupo = enfrentamientos[grupoIndex] || [];
+
+      return destinosGrupo.map((destino: any) => 
+        `<span class="text-${destino.color}">${destino.posicion}° → ${destino.descripcion}</span>`
+      ).join('<br>');
+    }
+
+    private calcularEnfrentamientosEspecificos(): any {
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+      const totalClasificados = this.grupos.length * clasificadosEfectivos;
+      const numGrupos = this.grupos.length;
+      const clasificadosPorGrupo = clasificadosEfectivos;
+      
+      const enfrentamientos: any = {};
+
+      // Inicializar para todos los grupos
+      for (let i = 0; i < numGrupos; i++) {
+        enfrentamientos[i] = [];
+      }
+
+      if (totalClasificados === 2) {
+        // Solo final
+        enfrentamientos[0].push({ posicion: 1, descripcion: 'Final vs 1° Grupo B', color: 'yellow-400' });
+        enfrentamientos[1].push({ posicion: 1, descripcion: 'Final vs 1° Grupo A', color: 'yellow-400' });
+        
+      } else if (totalClasificados === 3) {
+        // Caso especial: 2 grupos de 3 (1 c/u) + 1 grupo de 4 (1 c/u) = 3 total
+        // O 3 grupos de 3 (1 c/u) = 3 total
+        if (numGrupos === 3 && clasificadosPorGrupo === 1) {
+          enfrentamientos[0].push({ posicion: 1, descripcion: 'Semifinal vs ganador ronda previa', color: 'blue-400' });
+          enfrentamientos[1].push({ posicion: 1, descripcion: 'Ronda Previa vs 1° Grupo C', color: 'orange-400' });
+          enfrentamientos[2].push({ posicion: 1, descripcion: 'Ronda Previa vs 1° Grupo B', color: 'orange-400' });
+        }
+        
+      } else if (totalClasificados === 4) {
+        // 2 grupos de 4 (2 c/u) o 4 grupos de 3 (1 c/u)
+        if (clasificadosPorGrupo === 2) {
+          // 2 grupos, 2 clasificados cada uno
+          enfrentamientos[0].push({ posicion: 1, descripcion: 'Semifinal vs 2° Grupo B', color: 'purple-400' });
+          enfrentamientos[0].push({ posicion: 2, descripcion: 'Semifinal vs 1° Grupo B', color: 'purple-400' });
+          enfrentamientos[1].push({ posicion: 1, descripcion: 'Semifinal vs 2° Grupo A', color: 'purple-400' });
+          enfrentamientos[1].push({ posicion: 2, descripcion: 'Semifinal vs 1° Grupo A', color: 'purple-400' });
+        } else {
+          // 4 grupos, 1 clasificado cada uno
+          const semifinales = ['Semifinal A', 'Semifinal A', 'Semifinal B', 'Semifinal B'];
+          const rivales = ['vs 1° Grupo D', 'vs 1° Grupo C', 'vs 1° Grupo A', 'vs 1° Grupo B'];
+          for (let i = 0; i < 4; i++) {
+            enfrentamientos[i].push({ posicion: 1, descripcion: `${semifinales[i]} ${rivales[i]}`, color: 'purple-400' });
+          }
+        }
+        
+      } else if (totalClasificados === 6) {
+        // Caso mejorado: 3 grupos con 2 clasificados cada uno
+        if (clasificadosPorGrupo === 2 && numGrupos === 3) {
+          // Los 3 primeros pasan directo, los 3 segundos juegan ronda previa
+          enfrentamientos[0].push({ posicion: 1, descripcion: 'Semifinal directa (bye)', color: 'green-400' });
+          enfrentamientos[0].push({ posicion: 2, descripcion: 'Ronda Previa Final vs ganador(2°B vs 2°C)', color: 'orange-400' });
+          
+          enfrentamientos[1].push({ posicion: 1, descripcion: 'Semifinal vs 1° Grupo C', color: 'blue-400' });
+          enfrentamientos[1].push({ posicion: 2, descripcion: 'Ronda Previa vs 2° Grupo C', color: 'orange-400' });
+          
+          enfrentamientos[2].push({ posicion: 1, descripcion: 'Semifinal vs 1° Grupo B', color: 'blue-400' });
+          enfrentamientos[2].push({ posicion: 2, descripcion: 'Ronda Previa vs 2° Grupo B', color: 'orange-400' });
+        } else {
+          // Caso genérico para 6 clasificados
+          const primeros = ['1° A', '1° B', '1° C'];
+          const segundos = ['2° A', '2° B', '2° C'];
+          
+          for (let i = 0; i < numGrupos; i++) {
+            for (let pos = 1; pos <= clasificadosPorGrupo; pos++) {
+              if (pos === 1) {
+                enfrentamientos[i].push({ posicion: pos, descripcion: 'Pase directo a semifinal', color: 'green-400' });
+              } else {
+                enfrentamientos[i].push({ posicion: pos, descripcion: 'Ronda previa de segundos', color: 'orange-400' });
+              }
+            }
+          }
+        }
+        
+      } else if (totalClasificados === 8) {
+        // 4 grupos de 4 (2 c/u) o 8 grupos de 3 (1 c/u)
+        if (clasificadosPorGrupo === 2 && numGrupos === 4) {
+          const cuartos = [
+            ['Cuarto 1 vs 2° Grupo C', 'Cuarto 1 vs 1° Grupo A'],
+            ['Cuarto 2 vs 2° Grupo D', 'Cuarto 2 vs 1° Grupo B'], 
+            ['Cuarto 3 vs 2° Grupo A', 'Cuarto 3 vs 1° Grupo C'],
+            ['Cuarto 4 vs 2° Grupo B', 'Cuarto 4 vs 1° Grupo D']
+          ];
+          
+          for (let i = 0; i < 4; i++) {
+            enfrentamientos[i].push({ posicion: 1, descripcion: cuartos[i][1], color: 'red-400' });
+            enfrentamientos[i].push({ posicion: 2, descripcion: cuartos[i][0], color: 'red-400' });
+          }
+        }
+      }
+
+      // Caso genérico para otros números
+      if (Object.keys(enfrentamientos).every(key => enfrentamientos[key].length === 0)) {
+        for (let i = 0; i < numGrupos; i++) {
+          for (let pos = 1; pos <= clasificadosPorGrupo; pos++) {
+            const posGlobal = i * clasificadosPorGrupo + pos;
+            const llave = posGlobal <= totalClasificados / 2 ? 'Llave Superior' : 'Llave Inferior';
+            enfrentamientos[i].push({ 
+              posicion: pos, 
+              descripcion: llave, 
+              color: posGlobal <= totalClasificados / 2 ? 'green-400' : 'orange-400' 
+            });
+          }
+        }
+      }
+
+      return enfrentamientos;
+    }
+
+    private generarFixturePartidos(): void {
+      const infoPartidos = document.getElementById('info-partidos');
+      const listaPartidos = document.getElementById('lista-partidos');
+      
+      if (!infoPartidos || !listaPartidos || this.grupos.length === 0) return;
+
+      let todosLosPartidos: any[] = [];
+
+      this.grupos.forEach(grupo => {
+        const partidos = this.generarPartidosGrupo(grupo);
+        todosLosPartidos = todosLosPartidos.concat(partidos);
+      });
+
+      if (todosLosPartidos.length > 0) {
+        infoPartidos.classList.remove('hidden');
+        listaPartidos.innerHTML = todosLosPartidos.map((partido, index) => `
+          <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+            <span class="text-gray-400 text-sm w-12">#${index + 1}</span>
+            <div class="flex items-center space-x-4 flex-1">
+              <div class="flex items-center space-x-2">
+                <img src="/img/equipos/${partido.equipoLocal}.png" class="w-6 h-6" alt="">
+                <span class="text-white">${partido.jugadorLocal}</span>
+              </div>
+              <span class="text-gray-400">vs</span>
+              <div class="flex items-center space-x-2">
+                <img src="/img/equipos/${partido.equipoVisitante}.png" class="w-6 h-6" alt="">
+                <span class="text-white">${partido.jugadorVisitante}</span>
+              </div>
+            </div>
+            <span class="text-gray-400 text-sm">${partido.grupo}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    private generarPartidosGrupo(grupo: any): any[] {
+      const partidos: any[] = [];
+      const jugadores = grupo.jugadores;
+
+      // Generar todos contra todos
+      for (let i = 0; i < jugadores.length; i++) {
+        for (let j = i + 1; j < jugadores.length; j++) {
+          const equipoLocal = typeof jugadores[i].equipo === 'string' ? jugadores[i].equipo : jugadores[i].equipo?.id;
+          const equipoVisitante = typeof jugadores[j].equipo === 'string' ? jugadores[j].equipo : jugadores[j].equipo?.id;
+          
+          partidos.push({
+            grupo: grupo.nombre,
+            jugadorLocal: jugadores[i].nombre,
+            jugadorVisitante: jugadores[j].nombre,
+            equipoLocal,
+            equipoVisitante
+          });
+
+          // Si es ida y vuelta, agregar el partido de vuelta
+          if (this.configuracion.tipoFixture === 'ida-vuelta') {
+            partidos.push({
+              grupo: grupo.nombre,
+              jugadorLocal: jugadores[j].nombre,
+              jugadorVisitante: jugadores[i].nombre,
+              equipoLocal: equipoVisitante,
+              equipoVisitante: equipoLocal
+            });
+          }
+        }
+      }
+
+      return partidos;
+    }
+
+    private actualizarVistaEliminatorias(): void {
+      const preview = document.getElementById('preview-eliminatorias');
+      if (!preview || this.grupos.length === 0) {
+        if (preview) {
+          preview.innerHTML = `
+            <div class="text-center text-gray-400 py-8">
+              <div class="text-4xl mb-4">🏆</div>
+              <p>Configura los grupos primero para ver la estructura de eliminatorias</p>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+      const totalClasificados = this.grupos.length * clasificadosEfectivos;
+      
+      if (totalClasificados < 2) {
+        preview.innerHTML = `
+          <div class="text-center text-gray-400 py-8">
+            <div class="text-4xl mb-4">⚠️</div>
+            <p>Se necesitan al menos 2 clasificados para generar eliminatorias</p>
+            <p class="text-sm mt-2">Actualmente: ${totalClasificados} clasificados</p>
+          </div>
+        `;
+        return;
+      }
+
+      const estructura = this.calcularEstructuraEliminatorias(totalClasificados);
+      
+      if (estructura.error) {
+        preview.innerHTML = `
+          <div class="text-center text-red-400 py-8">
+            <div class="text-4xl mb-4">❌</div>
+            <p>${estructura.error}</p>
+          </div>
+        `;
+        return;
+      }
+
+      preview.innerHTML = `
+        <div class="space-y-6">
+          <div class="bg-gray-900/50 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-white mb-4">📊 Resumen de Eliminatorias</h4>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+              <div class="bg-green-600/20 rounded-lg p-4 border border-green-600/30">
+                <div class="text-2xl font-bold text-green-400">${totalClasificados}</div>
+                <div class="text-gray-300 text-sm">Clasificados</div>
+              </div>
+              <div class="bg-blue-600/20 rounded-lg p-4 border border-blue-600/30">
+                <div class="text-2xl font-bold text-blue-400">${estructura.fases.length}</div>
+                <div class="text-gray-300 text-sm">Fases</div>
+              </div>
+              <div class="bg-purple-600/20 rounded-lg p-4 border border-purple-600/30">
+                <div class="text-2xl font-bold text-purple-400">${estructura.totalPartidos}</div>
+                <div class="text-gray-300 text-sm">Partidos</div>
+              </div>
+              <div class="bg-orange-600/20 rounded-lg p-4 border border-orange-600/30">
+                <div class="text-2xl font-bold text-orange-400">1</div>
+                <div class="text-gray-300 text-sm">Campeón</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-white">🏆 Estructura del Torneo</h4>
+            ${estructura.fases.map((fase: any, index: number) => `
+              <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                <div class="flex justify-between items-center mb-3">
+                  <div class="flex items-center space-x-3">
+                    <span class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                      ${index + 1}
+                    </span>
+                    <div>
+                      <h5 class="font-bold text-white">${fase.nombre}</h5>
+                      <div class="text-xs text-gray-400 mt-1">
+                        ${fase.modalidad === 'ida-vuelta' ? '🔄 Ida y Vuelta' : '⚡ Partido Único'}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-gray-400 text-sm">${fase.partidos} partidos</div>
+                    ${fase.modalidad === 'ida-vuelta' ? `<div class="text-xs text-blue-400">${fase.partidosBase} × 2</div>` : ''}
+                  </div>
+                </div>
+                <div class="text-gray-300 text-sm bg-gray-900/50 rounded p-3">
+                  <div class="flex items-center justify-center space-x-6">
+                    <div class="text-center">
+                      <div class="text-lg font-semibold text-blue-400">${fase.participantesInicio || fase.participantesInicio}</div>
+                      <div class="text-xs text-gray-500">Ingresan</div>
+                    </div>
+                    <div class="text-gray-500">→</div>
+                    <div class="text-center">
+                      <div class="text-lg font-semibold text-green-400">${fase.partidos}</div>
+                      <div class="text-xs text-gray-500">Partidos</div>
+                    </div>
+                    <div class="text-gray-500">→</div>
+                    <div class="text-center">
+                      <div class="text-lg font-semibold text-yellow-400">${fase.participantesFin || fase.partidos}</div>
+                      <div class="text-xs text-gray-500">Avanzan</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          ${totalClasificados >= 4 && estructura.configuracion?.modoTercerPuesto === 'partido-unico' ? `
+            <div class="bg-amber-600/20 rounded-lg p-4 border border-amber-600/30 mt-4">
+              <h5 class="text-amber-400 font-bold mb-2">🥉 Partido por el Tercer Puesto</h5>
+              <div class="text-gray-300 text-sm">
+                <div class="flex items-center justify-center space-x-4">
+                  <span>Perdedores de Semifinales</span>
+                  <span class="text-gray-500">→</span>
+                  <span class="text-amber-400 font-medium">1 Partido</span>
+                  <span class="text-gray-500">→</span>
+                  <span>3° y 4° Puesto</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
+          ${this.generarDiagramaEliminatorias(estructura, totalClasificados)}
+        </div>
+      `;
+    }
+
+    private generarDiagramaEliminatorias(estructura: any, totalClasificados: number): string {
+      if (totalClasificados <= 2) {
+        return `
+          <div class="bg-gray-900/50 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-white mb-4">🎯 Diagrama de Eliminatorias</h4>
+            <div class="text-center">
+              <div class="bg-yellow-600/20 rounded-lg p-4 border border-yellow-600/30 inline-block">
+                <div class="text-yellow-400 font-bold">FINAL</div>
+                <div class="text-gray-300 text-sm mt-1">1° Grupo A vs 1° Grupo B</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Para casos más complejos, mostrar un diagrama textual
+      return `
+        <div class="bg-gray-900/50 rounded-lg p-6">
+          <h4 class="text-lg font-semibold text-white mb-4">🎯 Flujo de Eliminatorias</h4>
+          <div class="space-y-3">
+            ${this.grupos.map((grupo, index) => `
+              <div class="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                    ${String.fromCharCode(65 + index)}
+                  </span>
+                  <span class="text-white font-medium">${grupo.nombre}</span>
+                </div>
+                <div class="text-right text-sm">
+                  ${Array.from({length: this.getClasificadosEfectivos()}, (_, i) => 
+                    `<div class="text-green-400">${i + 1}° clasificado → ${this.obtenerPosicionEliminatoria(index, i + 1, totalClasificados)}</div>`
+                  ).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-600/30">
+            <div class="text-blue-400 text-sm text-center">
+              ⚡ Los clasificados se enfrentarán según su posición final en cada grupo
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    private obtenerPosicionEliminatoria(grupoIndex: number, posicion: number, totalClasificados: number): string {
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+      const posicionGlobal = grupoIndex * clasificadosEfectivos + posicion;
+      
+      if (totalClasificados === 4) {
+        return posicionGlobal <= 2 ? 'Semifinal A' : 'Semifinal B';
+      } else if (totalClasificados === 8) {
+        return `Cuarto ${Math.ceil(posicionGlobal / 2)}`;
+      } else {
+        return posicionGlobal <= totalClasificados / 2 ? 'Llave Superior' : 'Llave Inferior';
+      }
+    }
+
+    private calcularEstructuraEliminatorias(totalClasificados: number): any {
+      if (totalClasificados < 2) {
+        return { fases: [], totalPartidos: 0, error: 'Se necesitan al menos 2 clasificados' };
+      }
+
+      const fases: any[] = [];
+      let participantes = totalClasificados;
+      let totalPartidos = 0;
+
+      // Obtener configuración de eliminatorias
+      const configuracionElim = this.configuracion.configuracionEliminatorias || {
+        modalidadDefaultEliminatorias: 'ida-vuelta',
+        modoSemifinales: 'ida-vuelta',
+        modoCuartos: 'ida-vuelta',
+        modoFinal: 'partido-unico',
+        modoTercerPuesto: 'partido-unico'
+      };
+
+      // Si no es potencia de 2, calcular ronda previa
+      const esPotenciaDeDos = (n: number) => (n & (n - 1)) === 0;
+      
+      if (!esPotenciaDeDos(participantes) && participantes > 2) {
+        // Encontrar la potencia de 2 más cercana hacia abajo
+        const potenciaInferior = Math.pow(2, Math.floor(Math.log2(participantes)));
+        const partidosPrevia = participantes - potenciaInferior;
+        
+        if (partidosPrevia > 0) {
+          // Ronda previa usa modalidad default
+          const modalidadPrevia = configuracionElim.modalidadDefaultEliminatorias;
+          const partidosEfectivos = modalidadPrevia === 'ida-vuelta' ? partidosPrevia * 2 : partidosPrevia;
+          
+          fases.push({
+            nombre: 'Ronda Previa',
+            partidos: partidosEfectivos,
+            partidosBase: partidosPrevia,
+            modalidad: modalidadPrevia,
+            descripcion: `${partidosPrevia * 2} jugadores eliminan a ${partidosPrevia}, quedan ${potenciaInferior + partidosPrevia} para la siguiente fase`,
+            participantesInicio: partidosPrevia * 2,
+            participantesFin: partidosPrevia
+          });
+          totalPartidos += partidosEfectivos;
+          participantes = potenciaInferior + partidosPrevia;
+        }
+      }
+
+      // Generar fases principales (potencias de 2)
+      const fasesNombres: { [key: number]: string } = {
+        2: 'Final',
+        4: 'Semifinales', 
+        8: 'Cuartos de Final',
+        16: 'Octavos de Final',
+        32: 'Dieciseisavos de Final'
+      };
+
+      while (participantes > 1) {
+        const partidosBase = Math.floor(participantes / 2);
+        const nombre = fasesNombres[participantes] || `Ronda de ${participantes}`;
+        
+        // Determinar modalidad según la fase
+        let modalidad = configuracionElim.modalidadDefaultEliminatorias;
+        if (participantes === 4) {
+          modalidad = configuracionElim.modoSemifinales;
+        } else if (participantes === 8) {
+          modalidad = configuracionElim.modoCuartos;
+        } else if (participantes === 2) {
+          modalidad = configuracionElim.modoFinal;
+        }
+        
+        const partidosEfectivos = modalidad === 'ida-vuelta' ? partidosBase * 2 : partidosBase;
+        
+        fases.push({
+          nombre,
+          partidos: partidosEfectivos,
+          partidosBase: partidosBase,
+          modalidad: modalidad,
+          descripcion: `${participantes} jugadores → ${partidosBase} ganadores`,
+          participantesInicio: participantes,
+          participantesFin: partidosBase
+        });
+        
+        totalPartidos += partidosEfectivos;
+        participantes = partidosBase;
+      }
+
+      // Agregar partido por tercer puesto si aplica
+      if (totalClasificados >= 4 && configuracionElim.modoTercerPuesto === 'partido-unico') {
+        // Solo se agrega como información, no afecta el cálculo principal
+      }
+
+      return { fases, totalPartidos, configuracion: configuracionElim };
+    }
+
+    private actualizarInfoModalidad(): void {
+      const infoModalidad = document.getElementById('info-modalidad');
+      if (!infoModalidad) return;
+
+      const modalidad = this.configuracion.modalidadEliminatorias;
+      const totalClasificados = this.grupos.length * this.configuracion.clasificadosGrupo;
+
+      let info = '';
+      switch (modalidad) {
+        case 'automatico':
+          info = `
+            <div class="text-green-400 font-semibold mb-2">Modalidad Automática</div>
+            <div class="text-gray-300 text-sm">
+              El sistema determina automáticamente la mejor estructura según el número de clasificados (${totalClasificados}).
+              Se optimiza para reducir el número de rondas previas.
+            </div>
+          `;
+          break;
+        case 'cuartos':
+          info = `
+            <div class="text-blue-400 font-semibold mb-2">Desde Cuartos de Final</div>
+            <div class="text-gray-300 text-sm">
+              El torneo comenzará desde cuartos de final. Se necesitan exactamente 8 clasificados.
+              ${totalClasificados !== 8 ? `<br><span class="text-yellow-400">⚠️ Actualmente hay ${totalClasificados} clasificados</span>` : ''}
+            </div>
+          `;
+          break;
+        case 'semifinales':
+          info = `
+            <div class="text-purple-400 font-semibold mb-2">Desde Semifinales</div>
+            <div class="text-gray-300 text-sm">
+              El torneo comenzará desde semifinales. Se necesitan exactamente 4 clasificados.
+              ${totalClasificados !== 4 ? `<br><span class="text-yellow-400">⚠️ Actualmente hay ${totalClasificados} clasificados</span>` : ''}
+            </div>
+          `;
+          break;
+        case 'final':
+          info = `
+            <div class="text-red-400 font-semibold mb-2">Solo Final</div>
+            <div class="text-gray-300 text-sm">
+              Solo se jugará la final. Se necesitan exactamente 2 clasificados.
+              ${totalClasificados !== 2 ? `<br><span class="text-yellow-400">⚠️ Actualmente hay ${totalClasificados} clasificados</span>` : ''}
+            </div>
+          `;
+          break;
+        case 'personalizado':
+          info = `
+            <div class="text-orange-400 font-semibold mb-2">Modalidad Personalizada</div>
+            <div class="text-gray-300 text-sm">
+              Configura manualmente qué fases incluir en el torneo.
+              Esto te permite crear estructuras únicas según tus preferencias.
+            </div>
+          `;
+          break;
+      }
+
+      infoModalidad.innerHTML = info;
+    }
+
+    private actualizarEstadisticas(): void {
+      const totalJugadores = this.jugadores.length;
+      const conEquipo = this.jugadores.filter(j => j.equipo).length;
+      const numGrupos = this.grupos.length;
+      const clasificadosEfectivos = this.getClasificadosEfectivos();
+      const totalClasificados = numGrupos * clasificadosEfectivos;
+
+      document.getElementById('total-jugadores')!.textContent = totalJugadores.toString();
+      document.getElementById('con-equipo')!.textContent = conEquipo.toString();
+      document.getElementById('num-grupos')!.textContent = numGrupos.toString();
+      document.getElementById('total-clasificados')!.textContent = totalClasificados.toString();
+
+      // Habilitar/deshabilitar botón de iniciar torneo
+      const btnIniciar = document.getElementById('btn-iniciar-torneo') as HTMLButtonElement;
+      if (btnIniciar) {
+        btnIniciar.disabled = numGrupos === 0 || totalJugadores < 4;
+      }
+    }
+
+    private reiniciarConfiguracion(): void {
+      this.configuracion = {
+        modo: 'automatico',
+        tamanoGrupo: 4,
+        clasificadosGrupo: 'auto',
+        tipoFixture: 'ida',
+        soloSelecciones: false,
+        equiposBalanceados: false,
+        modalidadEliminatorias: 'automatico'
+      };
+      
+      this.grupos = [];
+      
+      // Resetear formularios
+      (document.getElementById('modo-grupos') as HTMLSelectElement).value = 'automatico';
+      (document.getElementById('tamano-grupo') as HTMLSelectElement).value = '4';
+      (document.getElementById('clasificados-grupo') as HTMLSelectElement).value = 'auto';
+      (document.getElementById('tipo-fixture') as HTMLSelectElement).value = 'ida';
+      (document.getElementById('modalidad-eliminatorias') as HTMLSelectElement).value = 'automatico';
+      
+      this.toggleConfiguracionManual(false);
+      this.calcularGruposAutomaticos();
+      this.actualizarInfoClasificados();
+      this.actualizarVistaPrevia();
+      this.actualizarVistaEliminatorias();
+      this.actualizarInfoModalidad();
+      
+      this.mostrarNotificacion('Configuración reiniciada correctamente', 'success');
+    }
+
+    private guardarConfiguracion(): void {
+      // Actualizar objeto configuracionEliminatorias
+      this.configuracion.configuracionEliminatorias = {
+        modalidadDefaultEliminatorias: this.configuracion.modalidadDefaultEliminatorias || 'ida-vuelta',
+        modoSemifinales: this.configuracion.modoSemifinales || 'ida-vuelta',
+        modoCuartos: this.configuracion.modoCuartos || 'ida-vuelta',
+        modoFinal: this.configuracion.modoFinal || 'partido-unico',
+        modoTercerPuesto: this.configuracion.modoTercerPuesto || 'partido-unico'
+      };
+
+      const config = {
+        configuracion: this.configuracion,
+        grupos: this.grupos,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem('gruposConfig', JSON.stringify(config));
+      this.mostrarNotificacion('Configuración guardada correctamente', 'success');
+    }
+
+    private cargarConfiguracionGuardada(): void {
+      const configGuardada = localStorage.getItem('gruposConfig');
+      if (configGuardada) {
+        try {
+          const config = JSON.parse(configGuardada);
+          this.configuracion = { ...this.configuracion, ...config.configuracion };
+          this.grupos = config.grupos || [];
+          
+          // Aplicar configuración a la UI
+          (document.getElementById('modo-grupos') as HTMLSelectElement).value = this.configuracion.modo;
+          (document.getElementById('tamano-grupo') as HTMLSelectElement).value = this.configuracion.tamanoGrupo.toString();
+          (document.getElementById('clasificados-grupo') as HTMLSelectElement).value = 
+            this.configuracion.clasificadosGrupo === 'auto' ? 'auto' : this.configuracion.clasificadosGrupo.toString();
+          
+          // Configuración de eliminatorias
+          if (this.configuracion.modalidadDefaultEliminatorias) {
+            (document.getElementById('modalidad-default-eliminatorias') as HTMLSelectElement).value = this.configuracion.modalidadDefaultEliminatorias;
+          }
+          if (this.configuracion.modoSemifinales) {
+            (document.getElementById('modo-semifinales') as HTMLSelectElement).value = this.configuracion.modoSemifinales;
+          }
+          if (this.configuracion.modoCuartos) {
+            (document.getElementById('modo-cuartos') as HTMLSelectElement).value = this.configuracion.modoCuartos;
+          }
+          if (this.configuracion.modoFinal) {
+            (document.getElementById('modo-final') as HTMLSelectElement).value = this.configuracion.modoFinal;
+          }
+          if (this.configuracion.modoTercerPuesto) {
+            (document.getElementById('modo-tercer-puesto') as HTMLSelectElement).value = this.configuracion.modoTercerPuesto;
+          }
+          
+          // Verificar si hay grupos generados y activar botón regenerar
+          const tieneGruposGenerados = this.grupos.some(grupo => grupo.jugadores && grupo.jugadores.length > 0);
+          if (tieneGruposGenerados) {
+            const btnRegenerar = document.getElementById('btn-regenerar-grupos') as HTMLButtonElement;
+            if (btnRegenerar) {
+              btnRegenerar.disabled = false;
+            }
+          }
+          
+          console.log('Configuración cargada desde localStorage:', { grupos: this.grupos.length, tieneJugadores: tieneGruposGenerados });
+        } catch (error) {
+          console.error('Error cargando configuración guardada:', error);
+          this.calcularGruposAutomaticos();
+        }
+      } else {
+        // Si no hay configuración guardada, generar grupos automáticamente
+        this.calcularGruposAutomaticos();
+      }
+    }
+
+    private iniciarTorneo(): void {
+      if (this.grupos.length === 0) {
+        this.mostrarNotificacion('Primero debes generar los grupos', 'error');
+        return;
+      }
+
+      this.mostrarModalConfirmacion(
+        'Iniciar Torneo',
+        '¿Estás seguro de que quieres iniciar el torneo? Esta acción creará todos los partidos y comenzará la fase de grupos.',
+        () => {
+          // Guardar configuración actual
+          this.guardarConfiguracion();
+          
+          this.mostrarNotificacion('¡Torneo iniciado! Redirigiendo...', 'success');
+          setTimeout(() => {
+            window.location.href = '/torneo';
+          }, 1500);
+        }
+      );
+    }
+
+    private accionModalPendiente: (() => void) | null = null;
+
+    private mostrarModalConfirmacion(titulo: string, mensaje: string, accion: () => void): void {
+      const modal = document.getElementById('modal-confirmacion');
+      const modalTitulo = document.getElementById('modal-titulo');
+      const modalMensaje = document.getElementById('modal-mensaje');
+      
+      if (modalTitulo) modalTitulo.textContent = titulo;
+      if (modalMensaje) modalMensaje.textContent = mensaje;
+      
+      this.accionModalPendiente = accion;
+      modal?.classList.remove('hidden');
+    }
+
+    private cerrarModal(): void {
+      const modal = document.getElementById('modal-confirmacion');
+      modal?.classList.add('hidden');
+      this.accionModalPendiente = null;
+    }
+
+    private ejecutarAccionModal(): void {
+      if (this.accionModalPendiente) {
+        this.accionModalPendiente();
+        this.accionModalPendiente = null;
+      }
+      this.cerrarModal();
+    }
+
+    private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'warning'): void {
+      const colores = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-orange-500'
+      };
+
+      const notificacion = document.createElement('div');
+      notificacion.className = `fixed top-4 right-4 ${colores[tipo]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+      notificacion.textContent = mensaje;
+
+      document.body.appendChild(notificacion);
+
+      setTimeout(() => {
+        notificacion.style.transform = 'translateX(400px)';
+      setTimeout(() => {
+        document.body.removeChild(notificacion);
+      }, 300);
+    }, 3000);
+  }
+
+  public actualizarTodaLaVista(): void {
+    this.actualizarInfoClasificados();
+    this.actualizarVistaPrevia();
+    this.actualizarVistaEliminatorias();
+    this.actualizarEstadisticas();
+    console.log('Vista completa actualizada');
+  }
+}  // Inicializar la aplicación
+  let gruposManager: GruposManager;
+  document.addEventListener('DOMContentLoaded', () => {
+    gruposManager = new GruposManager();
+    // Hacer accesible globalmente
+    (window as any).gruposManager = gruposManager;
+    
+    // Forzar actualización completa después de un pequeño delay
+    setTimeout(() => {
+      // Limpiar localStorage si tiene valores antiguos
+      const configGuardada = localStorage.getItem('gruposConfig');
+      if (configGuardada) {
+        try {
+          const config = JSON.parse(configGuardada);
+          if (typeof config.configuracion?.clasificadosGrupo === 'number') {
+            // Convertir valores antiguos numéricos a 'auto'
+            console.log('Actualizando configuración antigua de localStorage');
+            localStorage.removeItem('gruposConfig');
+          }
+        } catch (e) {
+          localStorage.removeItem('gruposConfig');
+        }
+      }
+      
+      gruposManager.actualizarTodaLaVista();
+    }, 100);
+  });
+
+  // Agregar función pública para forzar actualización
+  declare global {
+    interface Window {
+      gruposManager: any;
+    }
+  }
+</script>
+
+<style>
+  .input {
+    @apply px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+
+  .btn {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700 text-white;
+  }
+
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .btn-warning {
+    @apply bg-orange-600 hover:bg-orange-700 text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1 text-sm;
+  }
+
+  .tab-button {
+    @apply px-6 py-3 text-gray-400 hover:text-white transition-colors border-b-2 border-transparent;
+  }
+
+  .tab-button.active {
+    @apply text-white border-blue-500;
+  }
+
+  .tab-content {
+    @apply transition-all duration-300;
+  }
+
+  .btn-quick-action {
+    @apply block px-4 py-3 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg text-center transition-all duration-300 transform hover:scale-105 text-white no-underline;
+  }
+</style>

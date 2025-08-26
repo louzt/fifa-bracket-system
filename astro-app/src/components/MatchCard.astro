@@ -1,0 +1,87 @@
+---
+interface Props {
+  partido: {
+    _id: string;
+    jugador1: string;
+    jugador2: string;
+    resultado1?: number;
+    resultado2?: number;
+    fecha?: string;
+    jornada?: number;
+    grupo?: string;
+    tipo?: string;
+    ronda?: string;
+  };
+}
+
+const { partido } = Astro.props;
+const esJugado = partido.resultado1 !== undefined && partido.resultado2 !== undefined;
+---
+
+<div class="partido-item border rounded-lg p-4 mb-3 hover:shadow-lg transition-shadow">
+  {partido.tipo === 'eliminatoria' && (
+    <div class="text-sm text-purple-400 mb-2">
+      {partido.ronda?.toUpperCase()}
+    </div>
+  )}
+  
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <span class="player-name">{partido.jugador1}</span>
+      <span class="text-gray-400">vs</span>
+      <span class="player-name">{partido.jugador2}</span>
+    </div>
+    
+    <div class="resultado-container">
+      {esJugado ? (
+        <span class={`resultado ${
+          (partido.resultado1 || 0) > (partido.resultado2 || 0) ? 'victoria-local' :
+          (partido.resultado2 || 0) > (partido.resultado1 || 0) ? 'victoria-visitante' :
+          'empate'
+        }`}>
+          {partido.resultado1} - {partido.resultado2}
+        </span>
+      ) : (
+        <span class="text-gray-500">Por jugar</span>
+      )}
+    </div>
+  </div>
+  
+  {partido.fecha && (
+    <div class="text-xs text-gray-400 mt-2">
+      Fecha: {new Date(partido.fecha).toLocaleDateString('es-ES')}
+    </div>
+  )}
+  
+  {partido.jornada && (
+    <div class="text-xs text-blue-400">
+      Jornada {partido.jornada}
+    </div>
+  )}
+</div>
+
+<style>
+.partido-item {
+  @apply bg-gray-800 border-gray-600;
+}
+
+.player-name {
+  @apply text-emerald-400 font-medium;
+}
+
+.resultado {
+  @apply font-bold px-2 py-1 rounded;
+}
+
+.victoria-local {
+  @apply bg-green-500 bg-opacity-20 text-green-400;
+}
+
+.victoria-visitante {
+  @apply bg-blue-500 bg-opacity-20 text-blue-400;
+}
+
+.empate {
+  @apply bg-yellow-500 bg-opacity-20 text-yellow-400;
+}
+</style>

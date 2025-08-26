@@ -1,0 +1,40 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  subtitle?: string;
+  center?: boolean;
+}
+
+const { title, description, subtitle, center = false } = Astro.props;
+---
+
+<div class={`section-header ${center ? 'text-center' : ''}`}>
+  <h1 class="title-glow">{title}</h1>
+  {subtitle && (
+    <h2 class="subtitle-glow">{subtitle}</h2>
+  )}
+  {description && (
+    <p class="subtitle">{description}</p>
+  )}
+</div>
+
+<style>
+.section-header {
+  @apply mb-8;
+}
+
+.title-glow {
+  @apply text-4xl font-bold mb-4 text-emerald-400;
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.subtitle-glow {
+  @apply text-2xl font-semibold mb-2 text-cyan-400;
+  text-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+}
+
+.subtitle {
+  @apply text-gray-400 text-lg;
+}
+</style>

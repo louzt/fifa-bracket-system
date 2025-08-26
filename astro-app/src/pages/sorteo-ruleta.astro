@@ -1,0 +1,1725 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Sorteo de Equipos - Ruleta Vertical" description="Sortea equipos de manera aleatoria con la ruleta vertical clásica">
+  <div class="space-y-8">
+    <SectionHeader
+      title="🎰 Sorteo de Equipos - Ruleta Vertical"
+      subtitle="La ruleta clásica vertical con animación de casino"
+    />
+
+    <!-- Panel de Migración -->
+    <div id="panel-migracion" class="card border-yellow-500/50 bg-yellow-900/10">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-yellow-400">🔄 Migración a Base de Datos</h3>
+        <button id="cerrar-migracion" class="text-gray-400 hover:text-white transition-colors">
+          ✕
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="space-y-2">
+          <div class="flex items-center space-x-2">
+            <span id="check-jugadores" class="text-gray-400">⏳</span>
+            <span>Jugadores en DB</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span id="check-sorteos" class="text-gray-400">⏳</span>
+            <span>Último sorteo en DB</span>
+          </div>
+        </div>
+        <div id="estadisticas-migracion" class="bg-gray-800/50 rounded p-3">
+          <div class="text-sm text-gray-400">Estado de migración</div>
+          <div id="estado-migracion" class="text-yellow-400">Verificando...</div>
+        </div>
+      </div>
+      
+      <div class="flex space-x-4">
+        <button id="verificar-migracion" class="btn btn-secondary">
+          🔍 Verificar Estado
+        </button>
+        <button id="migrar-datos" class="btn btn-warning">
+          📤 Migrar a DB
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel principal -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <!-- Columna principal - Ruleta -->
+      <div class="xl:col-span-2 space-y-6">
+        <!-- Estado de jugadores -->
+        <div class="card">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="stat-card text-center">
+              <div class="stat-number" id="total-jugadores">0</div>
+              <p class="text-gray-400 mt-2">Jugadores</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-green-400" id="jugadores-sorteados">0</div>
+              <p class="text-gray-400 mt-2">Sorteados</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-yellow-400" id="jugadores-pendientes">0</div>
+              <p class="text-gray-400 mt-2">Pendientes</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jugador actual -->
+        <div class="card text-center">
+          <h3 class="text-2xl font-bold mb-4">Jugador Actual</h3>
+          <div id="jugador-actual" class="text-xl text-blue-400 mb-4">
+            Selecciona un jugador para comenzar
+          </div>
+          <button id="sortear-automatico" class="btn btn-warning" disabled>
+            🎲 Sorteo Automático
+          </button>
+        </div>
+
+        <!-- Ruleta Vertical -->
+        <div class="card">
+          <div class="relative mx-auto bg-gray-900 rounded-xl overflow-hidden border-4 border-blue-500/50" 
+               style="width: 100%; max-width: 600px; height: 500px;">
+            
+            <!-- Indicador central -->
+            <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-20">
+              <div class="w-0 h-0 border-t-8 border-b-8 border-r-12 border-transparent border-r-red-500 ml-2"></div>
+            </div>
+            <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-20">
+              <div class="w-0 h-0 border-t-8 border-b-8 border-l-12 border-transparent border-l-red-500 mr-2"></div>
+            </div>
+            
+            <!-- Zona de selección central -->
+            <div class="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-16 bg-red-500/20 border-y-2 border-red-500 z-10"></div>
+            
+            <!-- Contenedor de equipos -->
+            <div id="equipos-ruleta" class="relative overflow-hidden w-full" style="height: 500px; transform: translateY(0px);">
+              <!-- Los equipos se cargarán dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Controles -->
+          <div class="flex flex-wrap justify-center gap-4 mt-6">
+            <button id="girar-ruleta" class="btn btn-primary" disabled>
+              🎰 Girar Ruleta
+            </button>
+            <button id="sortear-todos" class="btn btn-success">
+              ⚡ Sortear Todos
+            </button>
+            <button id="reset-sorteo" class="btn btn-danger">
+              🔄 Reiniciar Sorteo
+            </button>
+          </div>
+
+          <!-- Resultado -->
+          <div id="resultado-sorteo" class="hidden mt-6 text-center">
+            <div class="bg-gradient-to-r from-green-600/20 to-emerald-600/20 rounded-xl p-6 border border-green-500/30">
+              <h3 class="text-2xl font-bold mb-4">🎉 ¡Equipo Asignado!</h3>
+              <div class="flex items-center justify-center space-x-6">
+                <img id="logo-equipo-sorteado" src="" alt="" class="w-16 h-16">
+                <div>
+                  <p class="text-xl font-bold" id="nombre-jugador-sorteado">-</p>
+                  <p class="text-lg text-green-400" id="nombre-equipo-sorteado">-</p>
+                  <p class="text-sm text-gray-400" id="info-equipo-sorteado">-</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel lateral -->
+      <div class="space-y-6">
+        <!-- Próximo jugador -->
+        <div class="card" id="proximo-jugador-card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">👤</span>
+            Próximo Jugador
+          </h3>
+          <div id="proximo-jugador" class="text-center">
+            <p class="text-gray-400">Cargando...</p>
+          </div>
+        </div>
+
+        <!-- Lista de equipos disponibles -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">⚽</span>
+            Equipos Disponibles
+          </h3>
+          <div id="equipos-disponibles" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            <!-- Se llenarán dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Historial de sorteos -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">📋</span>
+            Historial
+          </h3>
+          <div id="historial-sorteos" class="space-y-2 max-h-60 overflow-y-auto">
+            <p class="text-gray-400 text-center text-sm">No hay sorteos aún</p>
+          </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4">🚀 Acciones Rápidas</h3>
+          <div class="space-y-3">
+            <button id="exportar-resultados" class="btn btn-secondary w-full" disabled>
+              📄 Exportar Resultados
+            </button>
+            <button id="guardar-sorteo" class="btn btn-secondary w-full" disabled>
+              💾 Guardar Sorteo
+            </button>
+            <a href="/jugadores" class="btn btn-secondary w-full block text-center">
+              👥 Gestionar Jugadores
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de finalización -->
+    <div id="modal-finalizado" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" style="display: none;">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full border border-gray-700">
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-4xl">🎉</span>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">¡Sorteo Completado!</h3>
+            <p class="text-gray-400">Todos los jugadores tienen equipos asignados</p>
+          </div>
+
+          <div id="resumen-sorteo" class="bg-gray-900/50 rounded-lg p-4 mb-6">
+            <!-- Se llenará dinámicamente -->
+          </div>
+
+          <div class="flex space-x-4">
+            <button id="nuevo-sorteo" class="btn btn-secondary flex-1">
+              🔄 Nuevo Sorteo
+            </button>
+            <button id="ir-grupos" class="btn btn-primary flex-1">
+              ➡️ Crear Grupos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import type { Jugador } from '../types/index';
+
+  // Variables globales
+  let jugadores: Jugador[] = [];
+  let equiposDisponibles: any[] = [];
+  let jugadorActual: Jugador | null = null;
+  let equipoSeleccionado: any = null;
+  let isAnimating = false;
+
+  // Lista de equipos disponibles
+  const equiposFIFA = [
+    { id: 'argentina', nombre: 'Argentina', logo: '/img/equipos/argentina.png', tipo: 'seleccion' },
+    { id: 'brasil', nombre: 'Brasil', logo: '/img/equipos/brasil.png', tipo: 'seleccion' },
+    { id: 'espana', nombre: 'España', logo: '/img/equipos/espana.png', tipo: 'seleccion' },
+    { id: 'francia', nombre: 'Francia', logo: '/img/equipos/francia.png', tipo: 'seleccion' },
+    { id: 'alemania', nombre: 'Alemania', logo: '/img/equipos/alemania.png', tipo: 'seleccion' },
+    { id: 'italia', nombre: 'Italia', logo: '/img/equipos/italia.png', tipo: 'seleccion' },
+    { id: 'holanda', nombre: 'Holanda', logo: '/img/equipos/holanda.png', tipo: 'seleccion' },
+    { id: 'belgica', nombre: 'Bélgica', logo: '/img/equipos/belgica.png', tipo: 'seleccion' },
+    { id: 'inglaterra', nombre: 'Inglaterra', logo: '/img/equipos/inglaterra.png', tipo: 'seleccion' },
+    { id: 'barcelona', nombre: 'FC Barcelona', logo: '/img/equipos/barcelona.png', tipo: 'club' },
+    { id: 'real-madrid', nombre: 'Real Madrid', logo: '/img/equipos/real-madrid.png', tipo: 'club' },
+    { id: 'man-city', nombre: 'Manchester City', logo: '/img/equipos/man-city.png', tipo: 'club' },
+    { id: 'liverpool', nombre: 'Liverpool', logo: '/img/equipos/liverpool.png', tipo: 'club' },
+    { id: 'bayern', nombre: 'Bayern Munich', logo: '/img/equipos/bayern.png', tipo: 'club' },
+    { id: 'psg', nombre: 'Paris Saint-Germain', logo: '/img/equipos/psg.png', tipo: 'club' },
+    { id: 'juventus', nombre: 'Juventus', logo: '/img/equipos/juventus.png', tipo: 'club' },
+    { id: 'milan', nombre: 'AC Milan', logo: '/img/equipos/milan.png', tipo: 'club' },
+    { id: 'inter', nombre: 'Inter Milan', logo: '/img/equipos/inter.png', tipo: 'club' },
+    { id: 'atletico', nombre: 'Atlético Madrid', logo: '/img/equipos/atletico.png', tipo: 'club' },
+    { id: 'arsenal', nombre: 'Arsenal', logo: '/img/equipos/arsenal.png', tipo: 'club' },
+    { id: 'chelsea', nombre: 'Chelsea', logo: '/img/equipos/chelsea.png', tipo: 'club' },
+    { id: 'dortmund', nombre: 'Borussia Dortmund', logo: '/img/equipos/dortmund.png', tipo: 'club' }
+  ];
+
+  class SorteoRuleta {
+    constructor() {
+      this.inicializarEventos();
+      this.cargarDatos();
+    }
+
+    private inicializarEventos(): void {
+      // Botones principales
+      document.getElementById('girar-ruleta')?.addEventListener('click', () => this.girarRuleta());
+      document.getElementById('sortear-todos')?.addEventListener('click', () => this.confirmarSorteoTodos());
+      document.getElementById('reset-sorteo')?.addEventListener('click', () => this.confirmarResetSorteo());
+      document.getElementById('sortear-automatico')?.addEventListener('click', () => this.sorteoAutomatico());
+
+      // Modal
+      document.getElementById('btn-cancelar-modal')?.addEventListener('click', () => this.cerrarModal());
+      document.getElementById('btn-confirmar-modal')?.addEventListener('click', () => this.ejecutarAccionModal());
+    }
+
+    private async cargarDatos(): Promise<void> {
+      try {
+        // Cargar jugadores
+        const response = await fetch('/api/jugadores');
+        if (response.ok) {
+          jugadores = await response.json();
+          this.actualizarEstadisticas();
+          this.renderizarJugadores();
+          this.cargarEquiposDisponibles();
+          this.prepararRuleta();
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+      }
+    }
+
+    private cargarEquiposDisponibles(): void {
+      // Filtrar equipos ya asignados
+      const equiposAsignados = jugadores
+        .filter(j => j.equipo)
+        .map(j => j.equipo);
+
+      equiposDisponibles = equiposFIFA.filter(equipo => 
+        !equiposAsignados.includes(equipo.id)
+      );
+
+      console.log('Equipos disponibles:', equiposDisponibles.length);
+    }
+
+    private prepararRuleta(): void {
+      const container = document.getElementById('equipos-ruleta');
+      if (!container || equiposDisponibles.length === 0) return;
+
+      // Limpiar contenedor
+      container.innerHTML = '';
+      container.style.transform = 'translateY(0px)';
+
+      // Crear múltiples copias de los equipos para el efecto de ruleta infinita
+      const equiposParaRuleta = [];
+      for (let i = 0; i < 6; i++) {
+        equiposParaRuleta.push(...this.mezclarArray([...equiposDisponibles]));
+      }
+
+      // Crear elementos
+      equiposParaRuleta.forEach((equipo, index) => {
+        const equipoDiv = document.createElement('div');
+        equipoDiv.className = 'flex items-center p-4 border-b border-gray-700/50 transition-all duration-200';
+        equipoDiv.style.height = '80px';
+        equipoDiv.dataset.id = equipo.id;
+        equipoDiv.innerHTML = `
+          <img src="${equipo.logo}" alt="${equipo.nombre}" class="w-12 h-12 mr-4 object-contain">
+          <div>
+            <p class="font-bold text-white">${equipo.nombre}</p>
+            <p class="text-sm text-gray-400">${equipo.tipo === 'club' ? 'Club' : 'Selección'}</p>
+          </div>
+        `;
+        container.appendChild(equipoDiv);
+      });
+    }
+
+    private async girarRuleta(): Promise<void> {
+      if (isAnimating || !jugadorActual || equiposDisponibles.length === 0) return;
+
+      isAnimating = true;
+      this.deshabilitarBotones();
+
+      // Ocultar resultado anterior
+      const resultadoDiv = document.getElementById('resultado-sorteo');
+      resultadoDiv?.classList.add('hidden');
+
+      // Seleccionar equipo aleatorio
+      equipoSeleccionado = equiposDisponibles[Math.floor(Math.random() * equiposDisponibles.length)];
+
+      // Configurar animación
+      const container = document.getElementById('equipos-ruleta');
+      if (!container) return;
+
+      const itemHeight = 80; // Altura de cada elemento
+      const totalItems = container.children.length;
+      const duracionAnimacion = 4000; // 4 segundos
+
+      // Calcular posición final
+      const equiposArray = Array.from(container.children);
+      let targetIndex = -1;
+      
+      // Buscar el equipo seleccionado en la segunda mitad de los elementos
+      for (let i = Math.floor(totalItems / 2); i < totalItems; i++) {
+        const element = equiposArray[i] as HTMLElement;
+        if (element.dataset.id === equipoSeleccionado.id) {
+          targetIndex = i;
+          break;
+        }
+      }
+
+      if (targetIndex === -1) {
+        targetIndex = Math.floor(totalItems * 0.75); // Fallback
+      }
+
+      // Posición final para que el elemento quede en el centro
+      const targetPosition = -(targetIndex * itemHeight) + 210; // 210px para centrar
+
+      // Animar
+      let startTime = 0;
+      const animate = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duracionAnimacion, 1);
+
+        // Función de easing para desaceleración suave
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        
+        // Posición actual
+        const currentPosition = targetPosition * easeOutCubic;
+        container.style.transform = `translateY(${currentPosition}px)`;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Animación terminada
+          setTimeout(() => {
+            this.mostrarResultado();
+          }, 500);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+
+    private async mostrarResultado(): Promise<void> {
+      if (!equipoSeleccionado || !jugadorActual) return;
+
+      // Mostrar resultado en la UI
+      const resultadoDiv = document.getElementById('resultado-sorteo');
+      const logoImg = document.getElementById('logo-equipo-sorteado') as HTMLImageElement;
+      const nombreJugador = document.getElementById('nombre-jugador-sorteado');
+      const nombreEquipo = document.getElementById('nombre-equipo-sorteado');
+      const infoEquipo = document.getElementById('info-equipo-sorteado');
+
+      if (logoImg) logoImg.src = equipoSeleccionado.logo;
+      if (nombreJugador) nombreJugador.textContent = jugadorActual.nombre;
+      if (nombreEquipo) nombreEquipo.textContent = equipoSeleccionado.nombre;
+      if (infoEquipo) infoEquipo.textContent = equipoSeleccionado.tipo === 'club' ? 'Club' : 'Selección Nacional';
+
+      resultadoDiv?.classList.remove('hidden');
+
+      // Guardar en la base de datos
+      try {
+        const response = await fetch('/api/jugadores', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: jugadorActual.id,
+            nombre: jugadorActual.nombre,
+            equipo: equipoSeleccionado.id,
+            goles: jugadorActual.goles || 0,
+            partidos: jugadorActual.partidos || 0
+          })
+        });
+
+        if (response.ok) {
+          // Actualizar datos locales
+          const jugadorIndex = jugadores.findIndex(j => j.id === jugadorActual!.id);
+          if (jugadorIndex !== -1) {
+            jugadores[jugadorIndex].equipo = equipoSeleccionado.id;
+          }
+
+          // Actualizar UI
+          this.actualizarEstadisticas();
+          this.renderizarJugadores();
+          this.cargarEquiposDisponibles();
+          this.prepararRuleta();
+
+          // Buscar siguiente jugador automáticamente
+          setTimeout(() => {
+            this.seleccionarSiguienteJugador();
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error guardando resultado:', error);
+      }
+
+      isAnimating = false;
+      this.habilitarBotones();
+    }
+
+    private seleccionarSiguienteJugador(): void {
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      if (jugadoresSinEquipo.length > 0) {
+        this.seleccionarJugador(jugadoresSinEquipo[0]);
+      } else {
+        jugadorActual = null;
+        this.actualizarJugadorActual();
+      }
+    }
+
+    private async sorteoAutomatico(): Promise<void> {
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      if (jugadoresSinEquipo.length === 0) {
+        alert('No hay jugadores pendientes de sorteo');
+        return;
+      }
+
+      // Sortear todos automáticamente
+      for (const jugador of jugadoresSinEquipo) {
+        if (equiposDisponibles.length === 0) break;
+        
+        this.seleccionarJugador(jugador);
+        await this.esperarAnimacion(this.girarRuleta());
+        await this.esperar(1500); // Pausa entre sorteos
+      }
+    }
+
+    private seleccionarJugador(jugador: Jugador): void {
+      jugadorActual = jugador;
+      this.actualizarJugadorActual();
+      this.habilitarBotones();
+    }
+
+    private actualizarJugadorActual(): void {
+      const elemento = document.getElementById('jugador-actual');
+      if (elemento) {
+        elemento.textContent = jugadorActual 
+          ? jugadorActual.nombre 
+          : 'Todos los jugadores tienen equipo asignado';
+      }
+    }
+
+    private renderizarJugadores(): void {
+      const container = document.getElementById('lista-jugadores');
+      if (!container) return;
+
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      const jugadoresConEquipo = jugadores.filter(j => j.equipo);
+
+      container.innerHTML = '';
+
+      // Jugadores sin equipo
+      jugadoresSinEquipo.forEach(jugador => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 bg-yellow-600/20 rounded-lg border border-yellow-600/50';
+        div.innerHTML = `
+          <span class="font-medium">${jugador.nombre}</span>
+          <button class="btn-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                  onclick="sorteoRuleta.seleccionarJugadorPublico('${jugador.id}')">
+            Seleccionar
+          </button>
+        `;
+        container.appendChild(div);
+      });
+
+      // Jugadores con equipo
+      jugadoresConEquipo.forEach(jugador => {
+        const equipo = equiposFIFA.find(e => e.id === jugador.equipo);
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 bg-green-600/20 rounded-lg border border-green-600/50';
+        div.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <img src="${equipo?.logo || ''}" alt="${equipo?.nombre || ''}" class="w-6 h-6">
+            <span class="font-medium">${jugador.nombre}</span>
+          </div>
+          <span class="text-sm text-green-400">${equipo?.nombre || jugador.equipo}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    private actualizarEstadisticas(): void {
+      const total = jugadores.length;
+      const sorteados = jugadores.filter(j => j.equipo).length;
+      const pendientes = total - sorteados;
+
+      const totalElement = document.getElementById('total-jugadores');
+      const sorteadosElement = document.getElementById('jugadores-sorteados');
+      const pendientesElement = document.getElementById('jugadores-pendientes');
+
+      if (totalElement) totalElement.textContent = total.toString();
+      if (sorteadosElement) sorteadosElement.textContent = sorteados.toString();
+      if (pendientesElement) pendientesElement.textContent = pendientes.toString();
+    }
+
+    private deshabilitarBotones(): void {
+      const botones = ['girar-ruleta', 'sortear-todos', 'reset-sorteo', 'sortear-automatico'];
+      botones.forEach(id => {
+        const btn = document.getElementById(id) as HTMLButtonElement;
+        if (btn) btn.disabled = true;
+      });
+    }
+
+    private habilitarBotones(): void {
+      const btnGirar = document.getElementById('girar-ruleta') as HTMLButtonElement;
+      const btnAutomatico = document.getElementById('sortear-automatico') as HTMLButtonElement;
+      
+      if (btnGirar) btnGirar.disabled = !jugadorActual || equiposDisponibles.length === 0;
+      if (btnAutomatico) btnAutomatico.disabled = equiposDisponibles.length === 0;
+    }
+
+    private mezclarArray<T>(array: T[]): T[] {
+      const resultado = [...array];
+      for (let i = resultado.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [resultado[i], resultado[j]] = [resultado[j], resultado[i]];
+      }
+      return resultado;
+    }
+
+    private async esperarAnimacion(promesa: Promise<void>): Promise<void> {
+      await promesa;
+      while (isAnimating) {
+        await this.esperar(100);
+      }
+    }
+
+    private esperar(ms: number): Promise<void> {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private confirmarSorteoTodos(): void {
+      this.mostrarModal(
+        'Sortear Todos los Jugadores',
+        '¿Quieres sortear equipos para todos los jugadores pendientes automáticamente?',
+        () => this.sorteoAutomatico()
+      );
+    }
+
+    private confirmarResetSorteo(): void {
+      this.mostrarModal(
+        'Reiniciar Sorteo',
+        '¿Estás seguro de que quieres eliminar todas las asignaciones de equipos?',
+        () => this.resetearSorteo()
+      );
+    }
+
+    private async resetearSorteo(): Promise<void> {
+      try {
+        // Resetear todos los jugadores
+        for (const jugador of jugadores) {
+          await fetch('/api/jugadores', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: jugador.id,
+              nombre: jugador.nombre,
+              equipo: null,
+              goles: jugador.goles || 0,
+              partidos: jugador.partidos || 0
+            })
+          });
+        }
+
+        // Recargar datos
+        await this.cargarDatos();
+        jugadorActual = null;
+        this.actualizarJugadorActual();
+        
+        // Ocultar resultado
+        const resultadoDiv = document.getElementById('resultado-sorteo');
+        resultadoDiv?.classList.add('hidden');
+
+      } catch (error) {
+        console.error('Error reseteando sorteo:', error);
+      }
+    }
+
+    private mostrarModal(titulo: string, mensaje: string, accion: () => void): void {
+      const modal = document.getElementById('modal-confirmacion');
+      const tituloElement = document.getElementById('modal-titulo');
+      const mensajeElement = document.getElementById('modal-mensaje');
+      const btnConfirmar = document.getElementById('btn-confirmar-modal');
+
+      if (tituloElement) tituloElement.textContent = titulo;
+      if (mensajeElement) mensajeElement.textContent = mensaje;
+      if (btnConfirmar) {
+        btnConfirmar.onclick = () => {
+          this.cerrarModal();
+          accion();
+        };
+      }
+
+      modal?.classList.remove('hidden');
+    }
+
+    private cerrarModal(): void {
+      const modal = document.getElementById('modal-confirmacion');
+      modal?.classList.add('hidden');
+    }
+
+    private ejecutarAccionModal(): void {
+      // Esta función se sobrescribe en mostrarModal
+    }
+
+    // Método público para ser llamado desde HTML
+    public seleccionarJugadorPublico(id: string): void {
+      const jugador = jugadores.find(j => j.id === id);
+      if (jugador) {
+        this.seleccionarJugador(jugador);
+      }
+    }
+  }
+
+  // Inicializar cuando se carga la página
+  let sorteoRuleta: SorteoRuleta;
+  document.addEventListener('DOMContentLoaded', () => {
+    sorteoRuleta = new SorteoRuleta();
+    // Hacer accesible globalmente para el onclick
+    (window as any).sorteoRuleta = sorteoRuleta;
+  });
+</script>
+
+<style>
+  .btn-sm {
+    @apply transition-all duration-200 transform hover:scale-105;
+  }
+  
+  #equipos-ruleta {
+    transition: transform ease-out;
+  }
+  
+  .wheel-spinning {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  }
+</style>
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4">⚙️ Opciones de Sorteo</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="flex items-center space-x-3">
+              <input type="checkbox" id="sonidos-activados" class="rounded border-gray-600 bg-gray-800 text-blue-600" checked>
+              <span class="text-sm">Efectos de sonido</span>
+            </label>
+            <label class="flex items-center space-x-3">
+              <input type="checkbox" id="animaciones-activadas" class="rounded border-gray-600 bg-gray-800 text-blue-600" checked>
+              <span class="text-sm">Animaciones extra</span>
+            </label>
+            <label class="flex items-center space-x-3">
+              <input type="checkbox" id="auto-continuar" class="rounded border-gray-600 bg-gray-800 text-blue-600">
+              <span class="text-sm">Continuar automáticamente</span>
+            </label>
+            <label class="flex items-center space-x-3">
+              <input type="checkbox" id="mostrar-probabilidad" class="rounded border-gray-600 bg-gray-800 text-blue-600">
+              <span class="text-sm">Mostrar probabilidades</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Columna lateral -->
+      <div class="space-y-6">
+        <!-- Próximo jugador -->
+        <div class="card" id="proximo-jugador-card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">👤</span>
+            Próximo Jugador
+          </h3>
+          <div id="proximo-jugador" class="text-center">
+            <p class="text-gray-400">Cargando...</p>
+          </div>
+        </div>
+
+        <!-- Lista de equipos disponibles -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">⚽</span>
+            Equipos Disponibles
+          </h3>
+          <div id="equipos-disponibles" class="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+            <!-- Se llenarán dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Historial de sorteos -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">📋</span>
+            Historial
+          </h3>
+          <div id="historial-sorteos" class="space-y-2 max-h-60 overflow-y-auto">
+            <p class="text-gray-400 text-center text-sm">No hay sorteos aún</p>
+          </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4">🚀 Acciones Rápidas</h3>
+          <div class="space-y-3">
+            <button id="exportar-resultados" class="btn btn-secondary w-full" disabled>
+              📄 Exportar Resultados
+            </button>
+            <button id="guardar-sorteo" class="btn btn-secondary w-full" disabled>
+              💾 Guardar Sorteo
+            </button>
+            <a href="/jugadores" class="btn btn-secondary w-full block text-center">
+              👥 Gestionar Jugadores
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de finalización -->
+    <div id="modal-finalizado" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full border border-gray-700">
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-4xl">🎉</span>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">¡Sorteo Completado!</h3>
+            <p class="text-gray-400">Todos los jugadores tienen equipos asignados</p>
+          </div>
+
+          <div id="resumen-sorteo" class="bg-gray-900/50 rounded-lg p-4 mb-6">
+            <!-- Se llenará dinámicamente -->
+          </div>
+
+          <div class="flex space-x-4">
+            <button id="nuevo-sorteo" class="btn btn-secondary flex-1">
+              🔄 Nuevo Sorteo
+            </button>
+            <button id="ir-grupos" class="btn btn-primary flex-1">
+              ➡️ Crear Grupos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import type { Jugador } from '../types/index';
+
+    interface EquipoRuleta {
+      nombre: string;
+      logo: string;
+      color: string;
+      activo: boolean;
+    }
+
+    interface ResultadoSorteo {
+      jugador: string;
+      equipo: string;
+      logo: string;
+      timestamp: Date;
+    }
+
+    class RuletaSorteo {
+      private canvas: HTMLCanvasElement;
+      private ctx: CanvasRenderingContext2D | null = null;
+      private jugadores: Jugador[] = [];
+      private equipos: EquipoRuleta[] = [];
+      private jugadorActual: Jugador | null = null;
+      private girando = false;
+      private angulo = 0;
+      private velocidadAngular = 0;
+      private historial: ResultadoSorteo[] = [];
+      private animationId: number | null = null;
+      private posicionActual = 0;
+
+      // Configuración
+      private readonly RADIO = 180;
+      private readonly CENTRO_X = 200;
+      private readonly CENTRO_Y = 200;
+
+      constructor() {
+        // Ya no necesitamos canvas para la ruleta vertical
+        this.canvas = document.getElementById('wheel-canvas') as HTMLCanvasElement;
+        if (this.canvas) {
+          this.ctx = this.canvas.getContext('2d')!;
+        }
+        
+        this.cargarDatos();
+        this.inicializarEventos();
+        this.actualizarEstadisticas();
+      }
+
+      private async cargarDatos(): Promise<void> {
+        try {
+          // Cargar jugadores desde base de datos
+          const response = await fetch('/api/configuraciones');
+          if (response.ok) {
+            const configuraciones = await response.json();
+            const configJugadores = configuraciones.find((c: any) => c.clave === 'jugadores');
+            if (configJugadores) {
+              this.jugadores = JSON.parse(configJugadores.valor);
+            } else {
+              this.jugadores = [];
+            }
+          }
+        } catch (error) {
+          console.error('Error al cargar jugadores desde DB:', error);
+          // Fallback a localStorage durante migración
+          try {
+            const jugadoresLocal = localStorage.getItem('jugadores');
+            if (jugadoresLocal) {
+              this.jugadores = JSON.parse(jugadoresLocal);
+              console.log('Cargados jugadores desde localStorage como fallback');
+            } else {
+              this.jugadores = [];
+            }
+          } catch (fallbackError) {
+            console.error('Error en fallback localStorage:', fallbackError);
+            this.jugadores = [];
+          }
+        }
+
+        // Filtrar jugadores sin equipo
+        this.jugadores = this.jugadores.filter(j => !j.equipo);
+
+        // Cargar equipos disponibles
+        await this.cargarEquipos();
+        this.actualizarProximoJugador();
+        this.dibujarRuleta();
+        this.actualizarEstadisticas();
+      }
+
+      private async cargarEquipos(): Promise<void> {
+        // Equipos de selecciones y clubes Champions League basados en equipos.js
+        const equiposDisponibles = [
+          // SELECCIONES
+          { id: 'argentina', nombre: 'Argentina', logo: '/img/equipos/argentina.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'brasil', nombre: 'Brasil', logo: '/img/equipos/brasil.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'francia', nombre: 'Francia', logo: '/img/equipos/francia.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'inglaterra', nombre: 'Inglaterra', logo: '/img/equipos/inglaterra.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'portugal', nombre: 'Portugal', logo: '/img/equipos/portugal.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'alemania', nombre: 'Alemania', logo: '/img/equipos/alemania.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'belgica', nombre: 'Bélgica', logo: '/img/equipos/belgica.png', tipo: 'seleccion', estrellas: 5 },
+          { id: 'holanda', nombre: 'Holanda', logo: '/img/equipos/holanda.png', tipo: 'seleccion', estrellas: 4.5 },
+          { id: 'espana', nombre: 'España', logo: '/img/equipos/espana.png', tipo: 'seleccion', estrellas: 4.5 },
+          { id: 'italia', nombre: 'Italia', logo: '/img/equipos/italia.png', tipo: 'seleccion', estrellas: 4.5 },
+          
+          // CLUBES CHAMPIONS LEAGUE
+          { id: 'real-madrid', nombre: 'Real Madrid', logo: '/img/equipos/real-madrid.png', tipo: 'club', estrellas: 5 },
+          { id: 'barcelona', nombre: 'FC Barcelona', logo: '/img/equipos/barcelona.png', tipo: 'club', estrellas: 5 },
+          { id: 'man-city', nombre: 'Manchester City', logo: '/img/equipos/man-city.png', tipo: 'club', estrellas: 5 },
+          { id: 'liverpool', nombre: 'Liverpool', logo: '/img/equipos/liverpool.png', tipo: 'club', estrellas: 5 },
+          { id: 'bayern', nombre: 'Bayern Munich', logo: '/img/equipos/bayern.png', tipo: 'club', estrellas: 5 },
+          { id: 'psg', nombre: 'Paris Saint-Germain', logo: '/img/equipos/psg.png', tipo: 'club', estrellas: 5 },
+          { id: 'chelsea', nombre: 'Chelsea', logo: '/img/equipos/chelsea.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'arsenal', nombre: 'Arsenal', logo: '/img/equipos/arsenal.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'atletico', nombre: 'Atlético de Madrid', logo: '/img/equipos/atletico.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'inter', nombre: 'Inter de Milán', logo: '/img/equipos/inter.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'milan', nombre: 'AC Milan', logo: '/img/equipos/milan.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'juventus', nombre: 'Juventus', logo: '/img/equipos/juventus.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'dortmund', nombre: 'Borussia Dortmund', logo: '/img/equipos/dortmund.png', tipo: 'club', estrellas: 4.5 },
+          { id: 'napoli', nombre: 'Napoli', logo: '/img/equipos/napoli.png', tipo: 'club', estrellas: 4.5 }
+        ];
+
+        // Filtrar equipos ya asignados - cargar desde DB
+        let equiposAsignados: string[] = [];
+        try {
+          const response = await fetch('/api/configuraciones');
+          if (response.ok) {
+            const configuraciones = await response.json();
+            const configJugadores = configuraciones.find((c: any) => c.clave === 'jugadores');
+            if (configJugadores) {
+              const jugadoresConEquipo = JSON.parse(configJugadores.valor)
+                .filter((j: Jugador) => j.equipo)
+                .map((j: Jugador) => j.equipo);
+              equiposAsignados = jugadoresConEquipo;
+            }
+          }
+        } catch (error) {
+          console.error('Error al cargar equipos asignados desde DB:', error);
+          // Fallback a localStorage
+          const jugadoresLocal = JSON.parse(localStorage.getItem('jugadores') || '[]')
+            .filter((j: Jugador) => j.equipo)
+            .map((j: Jugador) => j.equipo);
+          equiposAsignados = jugadoresLocal;
+        }
+
+        this.equipos = equiposDisponibles
+          .filter(equipo => !equiposAsignados.includes(equipo.nombre))
+          .map(equipo => ({ 
+            nombre: equipo.nombre, 
+            logo: equipo.logo, 
+            color: this.getColorByType(equipo.tipo, equipo.estrellas),
+            activo: true 
+          }));
+
+        this.mostrarEquiposDisponibles();
+        this.dibujarRuleta();
+      }
+
+      private getColorByType(tipo: string, estrellas: number): string {
+        if (tipo === 'seleccion') {
+          return estrellas >= 5 ? '#DC2626' : '#EA580C'; // Rojo/Naranja para selecciones
+        } else {
+          return estrellas >= 5 ? '#2563EB' : '#7C3AED'; // Azul/Púrpura para clubes
+        }
+      }
+
+      private inicializarEventos(): void {
+        document.getElementById('girar-ruleta')?.addEventListener('click', () => {
+          this.girarRuleta();
+        });
+
+        document.getElementById('sortear-todos')?.addEventListener('click', () => {
+          this.sortearTodos();
+        });
+
+        document.getElementById('reset-sorteo')?.addEventListener('click', () => {
+          this.resetearSorteo();
+        });
+
+        document.getElementById('velocidad-giro')?.addEventListener('input', (e) => {
+          this.actualizarVelocidadTexto((e.target as HTMLInputElement).value);
+        });
+
+        document.getElementById('exportar-resultados')?.addEventListener('click', () => {
+          this.exportarResultados();
+        });
+
+        document.getElementById('guardar-sorteo')?.addEventListener('click', () => {
+          this.guardarSorteo();
+        });
+
+        document.getElementById('nuevo-sorteo')?.addEventListener('click', () => {
+          this.cerrarModal();
+          this.resetearSorteo();
+        });
+
+        document.getElementById('ir-grupos')?.addEventListener('click', () => {
+          window.location.href = '/config-grupos';
+        });
+      }
+
+      private actualizarEstadisticas(): void {
+        const total = this.jugadores.length;
+        const sorteados = this.historial.length;
+        const pendientes = total - sorteados;
+
+        document.getElementById('total-jugadores')!.textContent = total.toString();
+        document.getElementById('jugadores-sorteados')!.textContent = sorteados.toString();
+        document.getElementById('jugadores-pendientes')!.textContent = pendientes.toString();
+
+        // Habilitar/deshabilitar botones
+        const girarBtn = document.getElementById('girar-ruleta') as HTMLButtonElement;
+        const sortearTodosBtn = document.getElementById('sortear-todos') as HTMLButtonElement;
+        const exportarBtn = document.getElementById('exportar-resultados') as HTMLButtonElement;
+        const guardarBtn = document.getElementById('guardar-sorteo') as HTMLButtonElement;
+
+        const hayJugadores = pendientes > 0;
+        girarBtn.disabled = !hayJugadores || this.girando;
+        sortearTodosBtn.disabled = !hayJugadores || this.girando;
+        exportarBtn.disabled = sorteados === 0;
+        guardarBtn.disabled = sorteados === 0;
+      }
+
+      private actualizarProximoJugador(): void {
+        const jugadoresPendientes = this.jugadores.filter(j => !this.historial.some(h => h.jugador === j.nombre));
+        
+        if (jugadoresPendientes.length > 0) {
+          this.jugadorActual = jugadoresPendientes[0];
+          
+          const container = document.getElementById('proximo-jugador')!;
+          container.innerHTML = `
+            <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-lg p-4 border border-blue-500/30">
+              <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span class="text-2xl">👤</span>
+              </div>
+              <h4 class="font-bold text-lg">${this.jugadorActual.nombre}</h4>
+              <p class="text-blue-400 text-sm">Esperando sorteo...</p>
+            </div>
+          `;
+        } else {
+          document.getElementById('proximo-jugador')!.innerHTML = `
+            <p class="text-gray-400 text-center">¡Todos sorteados!</p>
+          `;
+          this.jugadorActual = null;
+        }
+      }
+
+      private mostrarEquiposDisponibles(): void {
+        const container = document.getElementById('equipos-disponibles')!;
+        
+        if (this.equipos.length === 0) {
+          container.innerHTML = '<p class="text-gray-400 text-center col-span-2">No hay equipos disponibles</p>';
+          return;
+        }
+
+        container.innerHTML = this.equipos.map(equipo => `
+          <div class="flex items-center space-x-2 p-2 bg-gray-800/50 rounded-lg border border-gray-700">
+            <img src="${equipo.logo}" alt="${equipo.nombre}" class="w-6 h-6" onerror="this.src='/img/equipos/default.png'">
+            <span class="text-xs truncate">${equipo.nombre}</span>
+          </div>
+        `).join('');
+      }
+
+      private dibujarRuleta(): void {
+        // En lugar de canvas, usaremos HTML para la ruleta vertical
+        this.crearRuletaVerticalHTML();
+      }
+
+      private crearRuletaVerticalHTML(): void {
+        const container = document.getElementById('equipos-ruleta');
+        if (!container || this.equipos.length === 0) return;
+
+        // Crear elementos de equipos para la ruleta vertical
+        const alturaItem = 80; // Altura de cada item
+        const totalItems = this.equipos.length * 4; // Repetir equipos para dar sensación de infinito
+        
+        let html = '';
+        for (let i = 0; i < totalItems; i++) {
+          const equipo = this.equipos[i % this.equipos.length];
+          const backgroundColor = equipo.color || this.getRandomColor();
+          
+          html += `
+            <div class="equipo-item flex items-center justify-between p-4 border-b-2 border-gray-700" 
+                 style="height: ${alturaItem}px; background: linear-gradient(135deg, ${backgroundColor}20, ${backgroundColor}40);">
+              <div class="flex items-center space-x-4">
+                <img src="${equipo.logo}" alt="${equipo.nombre}" class="w-12 h-12 object-contain" 
+                     onerror="this.src='/img/equipos/default.png'">
+                <div>
+                  <h4 class="font-bold text-white text-lg">${equipo.nombre}</h4>
+                  <p class="text-gray-300 text-sm">${this.getTipoEquipo(equipo.nombre)}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="w-3 h-3 rounded-full" style="background-color: ${backgroundColor};"></div>
+              </div>
+            </div>
+          `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Resetear posición
+        container.style.transform = 'translateY(0px)';
+        this.posicionActual = 0;
+      }
+
+      private getTipoEquipo(nombre: string): string {
+        const selecciones = ['Argentina', 'Brasil', 'Francia', 'Inglaterra', 'Portugal', 'Alemania', 'Bélgica', 'Holanda', 'España', 'Italia'];
+        return selecciones.includes(nombre) ? 'Selección Nacional' : 'Club';
+      }
+
+      private getRandomColor(): string {
+        const colores = ['#DC2626', '#2563EB', '#7C3AED', '#059669', '#EA580C', '#DB2777'];
+        return colores[Math.floor(Math.random() * colores.length)];
+      }
+
+      private girarRuleta(): void {
+        if (this.girando || !this.jugadorActual || this.equipos.length === 0) return;
+
+        this.girando = true;
+        this.actualizarEstadisticas();
+
+        // Ocultar resultado anterior
+        document.getElementById('resultado-actual')?.classList.add('hidden');
+
+        // Configurar velocidad basada en el slider (o usar default)
+        const velocidadSlider = (document.getElementById('velocidad-giro') as HTMLInputElement)?.value || '3';
+        const velocidadBase = parseInt(velocidadSlider) * 500 + 2000; // 2000-4500 pixels
+        
+        // Calcular posición final aleatoria
+        const alturaItem = 80;
+        const equipoGanadorIndex = Math.floor(Math.random() * this.equipos.length);
+        const distanciaTotal = velocidadBase + (equipoGanadorIndex * alturaItem);
+
+        // Reproducir sonido si está activado
+        if ((document.getElementById('sonidos-activados') as HTMLInputElement)?.checked) {
+          this.reproducirSonido('spin');
+        }
+
+        this.animarRuletaVertical(distanciaTotal, equipoGanadorIndex);
+      }
+
+      private animarRuletaVertical(distanciaTotal: number, equipoGanadorIndex: number): void {
+        const container = document.getElementById('equipos-ruleta');
+        if (!container) return;
+
+        const duracion = 3000; // 3 segundos
+        const inicio = performance.now();
+        const posicionInicial = this.posicionActual;
+
+        const animar = (tiempoActual: number) => {
+          const tiempoTranscurrido = tiempoActual - inicio;
+          const progreso = Math.min(tiempoTranscurrido / duracion, 1);
+          
+          // Función de easing (desaceleración)
+          const easing = 1 - Math.pow(1 - progreso, 4);
+          
+          this.posicionActual = posicionInicial + (distanciaTotal * easing);
+          container.style.transform = `translateY(-${this.posicionActual}px)`;
+
+          if (progreso < 1) {
+            this.animationId = requestAnimationFrame(animar);
+          } else {
+            this.pararRuletaVertical(equipoGanadorIndex);
+          }
+        };
+
+        this.animationId = requestAnimationFrame(animar);
+      }
+
+      private pararRuletaVertical(equipoGanadorIndex: number): void {
+        this.girando = false;
+
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+
+        // Determinar equipo ganador por índice
+        const equipoGanador = this.equipos[equipoGanadorIndex];
+        if (equipoGanador && this.jugadorActual) {
+          this.mostrarResultado(equipoGanador);
+        }
+
+        this.actualizarEstadisticas();
+      }
+
+      private pararRuleta(): void {
+        this.girando = false;
+        this.velocidadAngular = 0;
+
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+
+        // Determinar equipo ganador
+        const equipoGanador = this.determinarGanador();
+        if (equipoGanador && this.jugadorActual) {
+          this.mostrarResultado(equipoGanador);
+        }
+
+        this.actualizarEstadisticas();
+      }
+
+      private determinarGanador(): EquipoRuleta | null {
+        if (this.equipos.length === 0) return null;
+
+        const segmentos = this.equipos.length;
+        const anguloSegmento = (2 * Math.PI) / segmentos;
+        
+        // El indicador está en la parte superior (ángulo 0)
+        // Normalizar el ángulo
+        let anguloNormalizado = (-this.angulo) % (2 * Math.PI);
+        if (anguloNormalizado < 0) {
+          anguloNormalizado += 2 * Math.PI;
+        }
+
+        const indiceGanador = Math.floor(anguloNormalizado / anguloSegmento);
+        return this.equipos[indiceGanador] || null;
+      }
+
+      private mostrarResultado(equipo: EquipoRuleta): void {
+        if (!this.jugadorActual) return;
+
+        const resultado: ResultadoSorteo = {
+          jugador: this.jugadorActual.nombre,
+          equipo: equipo.nombre,
+          logo: equipo.logo,
+          timestamp: new Date()
+        };
+
+        this.historial.push(resultado);
+
+        // Mostrar resultado en la UI
+        const resultadoDiv = document.getElementById('resultado-actual')!;
+        document.getElementById('resultado-jugador')!.textContent = resultado.jugador;
+        document.getElementById('resultado-equipo')!.textContent = resultado.equipo;
+        
+        const logoImg = document.getElementById('resultado-logo') as HTMLImageElement;
+        logoImg.src = resultado.logo;
+        logoImg.alt = resultado.equipo;
+        logoImg.onerror = () => { logoImg.src = '/img/equipos/default.png'; };
+
+        resultadoDiv.classList.remove('hidden');
+
+        // Actualizar jugador en la base de datos
+        this.asignarEquipoAJugador(this.jugadorActual, equipo);
+
+        // Remover equipo de la lista
+        this.equipos = this.equipos.filter(e => e.nombre !== equipo.nombre);
+
+        // Actualizar UI
+        this.actualizarHistorial();
+        this.actualizarProximoJugador();
+        this.mostrarEquiposDisponibles();
+        this.dibujarRuleta();
+
+        // Reproducir sonido de éxito
+        if ((document.getElementById('sonidos-activados') as HTMLInputElement).checked) {
+          setTimeout(() => this.reproducirSonido('success'), 500);
+        }
+
+        // Auto-continuar si está activado
+        if ((document.getElementById('auto-continuar') as HTMLInputElement).checked) {
+          setTimeout(() => {
+            resultadoDiv.classList.add('hidden');
+            if (this.jugadores.filter(j => !this.historial.some(h => h.jugador === j.nombre)).length > 0) {
+              this.girarRuleta();
+            }
+          }, 3000);
+        }
+
+        // Verificar si terminamos
+        if (this.historial.length === this.jugadores.length) {
+          setTimeout(() => this.mostrarModalFinalizado(), 2000);
+        }
+      }
+
+      private async asignarEquipoAJugador(jugador: Jugador, equipo: EquipoRuleta): Promise<void> {
+        try {
+          // Intentar guardar en la base de datos primero
+          const response = await fetch('/api/configuraciones');
+          if (response.ok) {
+            const configuraciones = await response.json();
+            const configJugadores = configuraciones.find((c: any) => c.clave === 'jugadores');
+            
+            if (configJugadores) {
+              const jugadoresDB = JSON.parse(configJugadores.valor);
+              const index = jugadoresDB.findIndex((j: Jugador) => j.nombre === jugador.nombre);
+              if (index !== -1) {
+                jugadoresDB[index].equipo = equipo.nombre;
+                
+                // Guardar en DB
+                const updateResponse = await fetch('/api/configuraciones', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    clave: 'jugadores',
+                    valor: JSON.stringify(jugadoresDB),
+                    tipo: 'jugadores'
+                  })
+                });
+
+                if (!updateResponse.ok) {
+                  throw new Error('Error al actualizar jugadores en DB');
+                }
+                console.log('Jugador actualizado en DB');
+                return;
+              }
+            }
+          }
+          
+          throw new Error('No se encontró configuración de jugadores');
+        } catch (error) {
+          console.error('Error al asignar equipo en DB:', error);
+          // Fallback a localStorage
+          try {
+            const jugadoresLocal = JSON.parse(localStorage.getItem('jugadores') || '[]');
+            const index = jugadoresLocal.findIndex((j: Jugador) => j.nombre === jugador.nombre);
+            if (index !== -1) {
+              jugadoresLocal[index].equipo = equipo.nombre;
+              localStorage.setItem('jugadores', JSON.stringify(jugadoresLocal));
+              console.log('Jugador actualizado en localStorage como fallback');
+            }
+          } catch (fallbackError) {
+            console.error('Error en fallback localStorage:', fallbackError);
+          }
+        }
+      }
+
+      private actualizarHistorial(): void {
+        const container = document.getElementById('historial-sorteos')!;
+        
+        if (this.historial.length === 0) {
+          container.innerHTML = '<p class="text-gray-400 text-center text-sm">No hay sorteos aún</p>';
+          return;
+        }
+
+        container.innerHTML = this.historial
+          .slice(-10) // Últimos 10
+          .reverse()
+          .map(resultado => `
+            <div class="flex items-center space-x-3 p-2 bg-gray-800/30 rounded-lg">
+              <img src="${resultado.logo}" alt="${resultado.equipo}" class="w-6 h-6" onerror="this.src='/img/equipos/default.png'">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">${resultado.jugador}</p>
+                <p class="text-xs text-blue-400 truncate">${resultado.equipo}</p>
+              </div>
+            </div>
+          `).join('');
+      }
+
+      private sortearTodos(): void {
+        if (this.girando || this.equipos.length === 0) return;
+
+        const jugadoresPendientes = this.jugadores.filter(j => !this.historial.some(h => h.jugador === j.nombre));
+        
+        if (jugadoresPendientes.length === 0) return;
+
+        // Confirmar acción
+        if (!confirm(`¿Sortear todos los ${jugadoresPendientes.length} jugadores restantes automáticamente?`)) {
+          return;
+        }
+
+        this.sortearAutomaticamente(jugadoresPendientes);
+      }
+
+      private sortearAutomaticamente(jugadores: Jugador[]): void {
+        const equiposDisponibles = [...this.equipos];
+        
+        jugadores.forEach((jugador, index) => {
+          if (equiposDisponibles.length === 0) return;
+
+          const equipoAleatorio = equiposDisponibles[Math.floor(Math.random() * equiposDisponibles.length)];
+          
+          const resultado: ResultadoSorteo = {
+            jugador: jugador.nombre,
+            equipo: equipoAleatorio.nombre,
+            logo: equipoAleatorio.logo,
+            timestamp: new Date()
+          };
+
+          this.historial.push(resultado);
+          this.asignarEquipoAJugador(jugador, equipoAleatorio);
+
+          // Remover equipo usado
+          const equipoIndex = equiposDisponibles.findIndex(e => e.nombre === equipoAleatorio.nombre);
+          equiposDisponibles.splice(equipoIndex, 1);
+        });
+
+        // Actualizar equipos disponibles
+        this.equipos = equiposDisponibles;
+
+        // Actualizar UI
+        this.actualizarHistorial();
+        this.actualizarProximoJugador();
+        this.mostrarEquiposDisponibles();
+        this.actualizarEstadisticas();
+        this.dibujarRuleta();
+
+        // Mostrar modal de finalización
+        setTimeout(() => this.mostrarModalFinalizado(), 1000);
+      }
+
+      private resetearSorteo(): void {
+        if (!confirm('¿Estás seguro de que quieres reiniciar el sorteo? Se perderán todos los resultados.')) {
+          return;
+        }
+
+        this.historial = [];
+        this.girando = false;
+        this.angulo = 0;
+        this.velocidadAngular = 0;
+
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId);
+          this.animationId = null;
+        }
+
+        document.getElementById('resultado-actual')!.classList.add('hidden');
+
+        // Resetear equipos de jugadores
+        this.resetearEquiposJugadores();
+
+        // Recargar datos
+        this.cargarDatos();
+      }
+
+      private async resetearEquiposJugadores(): Promise<void> {
+        try {
+          // Cargar jugadores desde DB
+          const response = await fetch('/api/configuraciones');
+          if (response.ok) {
+            const configuraciones = await response.json();
+            const configJugadores = configuraciones.find((c: any) => c.clave === 'jugadores');
+            
+            if (configJugadores) {
+              const jugadoresDB = JSON.parse(configJugadores.valor);
+              // Resetear equipos
+              jugadoresDB.forEach((j: Jugador) => { j.equipo = undefined; });
+              
+              // Guardar en DB
+              const updateResponse = await fetch('/api/configuraciones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  clave: 'jugadores',
+                  valor: JSON.stringify(jugadoresDB),
+                  tipo: 'jugadores'
+                })
+              });
+
+              if (!updateResponse.ok) {
+                throw new Error('Error al resetear equipos en DB');
+              }
+              console.log('Equipos reseteados en DB');
+              return;
+            }
+          }
+          
+          throw new Error('No se encontró configuración de jugadores');
+        } catch (error) {
+          console.error('Error al resetear equipos en DB:', error);
+          // Fallback a localStorage
+          try {
+            const jugadoresLocal = JSON.parse(localStorage.getItem('jugadores') || '[]');
+            jugadoresLocal.forEach((j: Jugador) => { j.equipo = undefined; });
+            localStorage.setItem('jugadores', JSON.stringify(jugadoresLocal));
+            console.log('Equipos reseteados en localStorage como fallback');
+          } catch (fallbackError) {
+            console.error('Error en fallback localStorage:', fallbackError);
+          }
+        }
+      }
+
+      private mostrarModalFinalizado(): void {
+        const modal = document.getElementById('modal-finalizado')!;
+        const resumen = document.getElementById('resumen-sorteo')!;
+
+        resumen.innerHTML = `
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-400">${this.historial.length}</div>
+                <div class="text-gray-400">Jugadores</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-400">${new Set(this.historial.map(h => h.equipo)).size}</div>
+                <div class="text-gray-400">Equipos</div>
+              </div>
+            </div>
+            <div class="max-h-32 overflow-y-auto space-y-2">
+              ${this.historial.map(h => `
+                <div class="flex items-center space-x-2 text-sm">
+                  <img src="${h.logo}" alt="${h.equipo}" class="w-5 h-5" onerror="this.src='/img/equipos/default.png'">
+                  <span class="flex-1">${h.jugador}</span>
+                  <span class="text-blue-400">${h.equipo}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+      }
+
+      private cerrarModal(): void {
+        document.getElementById('modal-finalizado')!.classList.add('hidden');
+      }
+
+      private actualizarVelocidadTexto(valor: string): void {
+        const textos = ['Muy Lenta', 'Lenta', 'Normal', 'Rápida', 'Muy Rápida'];
+        document.getElementById('velocidad-texto')!.textContent = textos[parseInt(valor) - 1];
+      }
+
+      private reproducirSonido(tipo: 'spin' | 'success'): void {
+        // Placeholder para efectos de sonido
+        // Se pueden agregar archivos de audio aquí
+        console.log(`Reproduciendo sonido: ${tipo}`);
+      }
+
+      private exportarResultados(): void {
+        if (this.historial.length === 0) return;
+
+        const csv = [
+          'Jugador,Equipo,Fecha',
+          ...this.historial.map(h => `${h.jugador},${h.equipo},${h.timestamp.toLocaleString()}`)
+        ].join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sorteo-equipos-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      private async guardarSorteo(): Promise<void> {
+        if (this.historial.length === 0) return;
+
+        const sorteo = {
+          fecha: new Date().toISOString(),
+          resultados: this.historial
+        };
+
+        try {
+          // Guardar en base de datos
+          const response = await fetch('/api/configuraciones', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clave: 'ultimo-sorteo',
+              valor: JSON.stringify(sorteo),
+              tipo: 'sorteo'
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+
+          console.log('Sorteo guardado en DB');
+        } catch (error) {
+          console.error('Error al guardar sorteo en DB:', error);
+          // Fallback a localStorage
+          localStorage.setItem('ultimo-sorteo', JSON.stringify(sorteo));
+          console.log('Sorteo guardado en localStorage como fallback');
+        }
+        
+        // Mostrar confirmación
+        const btn = document.getElementById('guardar-sorteo')!;
+        const textoOriginal = btn.textContent;
+        btn.textContent = '✅ Guardado';
+        setTimeout(() => {
+          btn.textContent = textoOriginal;
+        }, 2000);
+      }
+    }
+
+    // Funciones de migración
+    async function verificarEstadoMigracion() {
+      const checkJugadores = document.getElementById('check-jugadores')!;
+      const checkSorteos = document.getElementById('check-sorteos')!;
+      const estadoMigracion = document.getElementById('estado-migracion')!;
+
+      try {
+        // Verificar jugadores en DB
+        const responseJugadores = await fetch('/api/configuraciones');
+        if (responseJugadores.ok) {
+          const configuraciones = await responseJugadores.json();
+          const jugadoresDB = configuraciones.find((c: any) => c.clave === 'jugadores');
+          
+          if (jugadoresDB) {
+            checkJugadores.textContent = '✅';
+            checkJugadores.className = 'text-green-400';
+          } else {
+            checkJugadores.textContent = '❌';
+            checkJugadores.className = 'text-red-400';
+          }
+        }
+
+        // Verificar último sorteo en DB
+        const responseSorteos = await fetch('/api/configuraciones');
+        if (responseSorteos.ok) {
+          const configuraciones = await responseSorteos.json();
+          const sorteoData = configuraciones.find((c: any) => c.clave === 'ultimo-sorteo');
+          
+          if (sorteoData) {
+            checkSorteos.textContent = '✅';
+            checkSorteos.className = 'text-green-400';
+          } else {
+            checkSorteos.textContent = '❌';
+            checkSorteos.className = 'text-red-400';
+          }
+        }
+
+        // Verificar localStorage
+        const jugadoresLocal = localStorage.getItem('jugadores');
+        const sorteoLocal = localStorage.getItem('ultimo-sorteo');
+        
+        if (!jugadoresLocal && !sorteoLocal) {
+          estadoMigracion.textContent = 'Sin datos para migrar';
+          estadoMigracion.className = 'text-green-400';
+        } else {
+          estadoMigracion.textContent = 'Datos pendientes de migración';
+          estadoMigracion.className = 'text-yellow-400';
+        }
+
+      } catch (error) {
+        console.error('Error al verificar migración:', error);
+        estadoMigracion.textContent = 'Error en verificación';
+        estadoMigracion.className = 'text-red-400';
+      }
+    }
+
+    async function migrarDatos() {
+      const estadoMigracion = document.getElementById('estado-migracion')!;
+      estadoMigracion.textContent = 'Migrando...';
+      estadoMigracion.className = 'text-blue-400';
+
+      try {
+        let migracionExitosa = true;
+
+        // Migrar jugadores
+        const jugadoresLocal = localStorage.getItem('jugadores');
+        if (jugadoresLocal) {
+          const response = await fetch('/api/configuraciones', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clave: 'jugadores',
+              valor: jugadoresLocal,
+              tipo: 'jugadores'
+            })
+          });
+
+          if (!response.ok) {
+            migracionExitosa = false;
+            console.error('Error al migrar jugadores');
+          }
+        }
+
+        // Migrar último sorteo
+        const sorteoLocal = localStorage.getItem('ultimo-sorteo');
+        if (sorteoLocal) {
+          const response = await fetch('/api/configuraciones', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clave: 'ultimo-sorteo',
+              valor: sorteoLocal,
+              tipo: 'sorteo'
+            })
+          });
+
+          if (!response.ok) {
+            migracionExitosa = false;
+            console.error('Error al migrar último sorteo');
+          }
+        }
+
+        if (migracionExitosa) {
+          estadoMigracion.textContent = 'Migración completada';
+          estadoMigracion.className = 'text-green-400';
+          
+          // Verificar nuevamente
+          setTimeout(() => {
+            verificarEstadoMigracion();
+          }, 1000);
+        } else {
+          estadoMigracion.textContent = 'Error en migración';
+          estadoMigracion.className = 'text-red-400';
+        }
+
+      } catch (error) {
+        console.error('Error durante migración:', error);
+        estadoMigracion.textContent = 'Error en migración';
+        estadoMigracion.className = 'text-red-400';
+      }
+    }
+
+    function setupMigracionButtons() {
+      const verificarBtn = document.getElementById('verificar-migracion');
+      const migrarBtn = document.getElementById('migrar-datos');
+      const cerrarBtn = document.getElementById('cerrar-migracion');
+      const panel = document.getElementById('panel-migracion');
+
+      verificarBtn?.addEventListener('click', verificarEstadoMigracion);
+      migrarBtn?.addEventListener('click', migrarDatos);
+      cerrarBtn?.addEventListener('click', () => {
+        panel?.style.setProperty('display', 'none');
+      });
+
+      // Verificar estado inicial
+      verificarEstadoMigracion();
+    }
+
+    // Inicializar cuando se carga la página
+    document.addEventListener('DOMContentLoaded', () => {
+      new RuletaSorteo();
+      setupMigracionButtons();
+    });
+  </script>
+</Layout>

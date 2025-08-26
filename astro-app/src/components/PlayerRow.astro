@@ -1,0 +1,63 @@
+---
+interface Props {
+  jugador: {
+    _id: string;
+    nombre: string;
+    equipo?: {
+      id: string;
+      nombre: string;
+    } | string;
+    estadisticas?: {
+      puntos?: number;
+      partidosJugados?: number;
+      victorias?: number;
+      empates?: number;
+      derrotas?: number;
+      golesFavor?: number;
+      golesContra?: number;
+    };
+  };
+  posicion: number;
+  esClasificado?: boolean;
+  key?: string;
+}
+
+const { jugador, posicion, esClasificado = false } = Astro.props;
+const diferencia = (jugador.estadisticas?.golesFavor || 0) - (jugador.estadisticas?.golesContra || 0);
+---
+
+<tr class={`border-b border-gray-700 hover:bg-gray-700/30 transition-colors ${esClasificado ? 'bg-green-900/20 border-green-700' : ''}`}>
+  <td class="py-3 px-4">
+    <div class="flex items-center">
+      <span class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mr-3 ${
+        posicion <= 2 ? 'bg-green-500 text-white' : 
+        posicion === 3 ? 'bg-yellow-500 text-white' : 
+        'bg-gray-500 text-white'
+      }`}>
+        {posicion}
+      </span>
+      {jugador.equipo && (
+        <img 
+          src={`/img/equipos/${
+            typeof jugador.equipo === 'string' ? jugador.equipo : jugador.equipo.id
+          }.png`} 
+          class="w-6 h-6 mr-2" 
+          alt={`Equipo ${typeof jugador.equipo === 'string' ? jugador.equipo : jugador.equipo.nombre}`}
+        />
+      )}
+      <span class="nombre-jugador text-white font-medium">{jugador.nombre}</span>
+    </div>
+  </td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.partidosJugados || 0}</td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.victorias || 0}</td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.empates || 0}</td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.derrotas || 0}</td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.golesFavor || 0}</td>
+  <td class="text-center py-3 px-4 text-gray-300">{jugador.estadisticas?.golesContra || 0}</td>
+  <td class="text-center py-3 px-4">
+    <span class={diferencia > 0 ? 'text-green-400 font-semibold' : diferencia < 0 ? 'text-red-400 font-semibold' : 'text-gray-300'}>
+      {diferencia > 0 ? '+' : ''}{diferencia}
+    </span>
+  </td>
+  <td class="text-center py-3 px-4 font-bold text-emerald-400">{jugador.estadisticas?.puntos || 0}</td>
+</tr>

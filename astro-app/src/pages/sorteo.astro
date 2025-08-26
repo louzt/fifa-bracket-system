@@ -1,0 +1,1555 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Sorteo de Equipos" description="Sortea equipos de manera aleatoria con la ruleta vertical clásica">
+  <div class="space-y-8">
+    <SectionHeader
+      title="🎰 Sorteo de Equipos"
+      subtitle="Ruleta vertical con equipos de selecciones y Champions League"
+    />
+
+    <!-- Panel principal -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <!-- Columna principal - Ruleta -->
+      <div class="xl:col-span-2 space-y-6">
+        <!-- Estado de jugadores -->
+        <div class="card">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="stat-card text-center">
+              <div class="stat-number" id="total-jugadores">0</div>
+              <p class="text-gray-400 mt-2">Jugadores</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-green-400" id="jugadores-sorteados">0</div>
+              <p class="text-gray-400 mt-2">Sorteados</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-yellow-400" id="jugadores-pendientes">0</div>
+              <p class="text-gray-400 mt-2">Pendientes</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jugador actual -->
+        <div class="card text-center">
+          <h3 class="text-2xl font-bold mb-4">Jugador Actual</h3>
+          <div id="jugador-actual" class="text-xl text-blue-400 mb-4">
+            Cargando jugadores...
+          </div>
+          <button id="sortear-automatico" class="btn btn-warning" disabled>
+            🎲 Sorteo Automático
+          </button>
+        </div>
+
+        <!-- Ruleta Vertical -->
+        <div class="card">
+          <div class="relative mx-auto bg-gray-900 rounded-xl overflow-hidden border-4 border-blue-500/50" 
+               style="width: 100%; height: 500px;">
+            
+            <!-- Indicadores laterales -->
+            <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-20">
+              <div class="w-0 h-0 border-t-8 border-b-8 border-r-12 border-transparent border-r-red-500 ml-2"></div>
+            </div>
+            <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-20">
+              <div class="w-0 h-0 border-t-8 border-b-8 border-l-12 border-transparent border-l-red-500 mr-2"></div>
+            </div>
+            
+            <!-- Zona de selección central -->
+            <div class="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-20 bg-red-500/20 border-y-2 border-red-500 z-10"></div>
+            
+            <!-- Contenedor de equipos -->
+            <div class="relative w-full bg-gray-900/50 rounded-lg border border-gray-700 ruleta-container" style="height: 500px;">
+              <div class="absolute inset-0 overflow-hidden">
+                <div id="equipos-ruleta" class="relative w-full transition-transform duration-100 ease-linear" style="transform: translateY(0px);">
+                  <div class="flex items-center justify-center h-full text-gray-400" style="height: 500px;">
+                    <div class="text-center">
+                      <div class="text-4xl mb-4">⚽</div>
+                      <p>Cargando equipos...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controles -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            <button id="girar-ruleta" class="btn btn-primary w-full" disabled>
+              🎰 Girar Ruleta
+            </button>
+            <button id="sortear-todos" class="btn btn-success w-full">
+              ⚡ Sortear Todos
+            </button>
+            <button id="reset-sorteo" class="btn btn-danger w-full">
+              🔄 Reiniciar Sorteo
+            </button>
+          </div>
+
+          <!-- Resultado -->
+          <div id="resultado-sorteo" class="hidden mt-6 text-center">
+            <div class="bg-gradient-to-r from-green-600/20 to-emerald-600/20 rounded-xl p-6 border border-green-500/30">
+              <h3 class="text-2xl font-bold mb-4">🎉 ¡Equipo Asignado!</h3>
+              <div class="flex items-center justify-center space-x-6">
+                <div class="relative">
+                  <img id="logo-equipo-sorteado" src="" alt="" class="w-16 h-16" 
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                  <div class="w-16 h-16 bg-green-600 rounded-lg flex items-center justify-center text-3xl" style="display:none;">⚽</div>
+                </div>
+                <div>
+                  <p class="text-xl font-bold" id="nombre-jugador-sorteado">-</p>
+                  <p class="text-lg text-green-400" id="nombre-equipo-sorteado">-</p>
+                  <p class="text-sm text-gray-400" id="info-equipo-sorteado">-</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel lateral -->
+      <div class="space-y-6">
+        <!-- Próximo jugador -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">👤</span>
+            Próximo Jugador
+          </h3>
+          <div id="proximo-jugador" class="text-center">
+            <p class="text-gray-400">Cargando...</p>
+          </div>
+        </div>
+
+        <!-- Lista de equipos disponibles -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">⚽</span>
+            Equipos Disponibles
+          </h3>
+          
+          <!-- Controles masivos -->
+          <div class="flex gap-2 mb-4">
+            <button onclick="sorteoManager.habilitarTodosEquipos()" class="btn-control btn-control-enable">
+              ✓ Todos
+            </button>
+            <button onclick="sorteoManager.deshabilitarTodosEquipos()" class="btn-control btn-control-disable">
+              ✗ Ninguno
+            </button>
+          </div>
+          
+          <div id="equipos-disponibles" class="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+            <p class="text-gray-400 text-center">Cargando equipos...</p>
+          </div>
+        </div>
+
+        <!-- Lista de jugadores -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">📋</span>
+            Lista de Jugadores
+          </h3>
+          <div id="lista-jugadores" class="space-y-2 max-h-60 overflow-y-auto">
+            <p class="text-gray-400 text-center text-sm">Cargando jugadores...</p>
+          </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="card">
+          <h3 class="text-lg font-semibold mb-4">🚀 Acciones Rápidas</h3>
+          <div class="space-y-3">
+            <a href="/jugadores" class="btn btn-secondary w-full block text-center">
+              👥 Gestionar Jugadores
+            </a>
+            <a href="/grupos" class="btn btn-primary w-full block text-center" id="btn-grupos">
+              ⚽ Ver Grupos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="modal-confirmacion" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full border border-gray-700">
+          <h3 id="modal-titulo" class="text-xl font-bold mb-4">Confirmar acción</h3>
+          <p id="modal-mensaje" class="text-gray-300 mb-6">¿Estás seguro?</p>
+          <div class="flex space-x-4">
+            <button id="btn-cancelar-modal" class="btn btn-secondary flex-1">
+              Cancelar
+            </button>
+            <button id="btn-confirmar-modal" class="btn btn-primary flex-1">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de finalización -->
+    <div id="modal-finalizado" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-lg w-full border border-gray-700">
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-4xl">🎉</span>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">¡Sorteo Completado!</h3>
+            <p class="text-gray-400">Todos los jugadores tienen equipos asignados</p>
+          </div>
+
+          <div id="resumen-sorteo" class="bg-gray-900/50 rounded-lg p-4 mb-6">
+            <div class="text-center">
+              <p class="text-gray-400">Cargando resumen...</p>
+            </div>
+          </div>
+
+          <div class="flex space-x-4">
+            <button id="nuevo-sorteo" class="btn btn-secondary flex-1">
+              🔄 Nuevo Sorteo
+            </button>
+            <button id="ir-grupos" class="btn btn-primary flex-1">
+              ➡️ Ver Grupos
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Resorteo Individual -->
+  <div id="modal-resorteo" class="fixed inset-0 z-50 hidden">
+    <!-- Overlay -->
+    <div class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+      <div class="bg-gray-800 rounded-2xl border border-gray-600 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-700">
+          <h3 class="text-xl font-bold text-white flex items-center">
+            🎲 Resorteo Individual
+          </h3>
+          <button id="cerrar-modal" class="text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-6">
+          <!-- Selección de jugador -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-3">
+              👤 Seleccionar Jugador
+            </label>
+            <select id="select-jugador-resorteo" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">Selecciona un jugador...</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-2">
+              💡 Puedes resortear cualquier jugador, incluso si ya tiene equipo asignado
+            </p>
+          </div>
+
+          <!-- Información del jugador seleccionado -->
+          <div id="info-jugador-actual" class="hidden bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+            <h4 class="font-semibold text-white mb-2">Jugador Actual:</h4>
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+                <span id="inicial-jugador" class="text-white font-bold"></span>
+              </div>
+              <div>
+                <div id="nombre-jugador-modal" class="text-white font-medium"></div>
+                <div id="equipo-actual-modal" class="text-sm text-gray-400"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opciones de resorteo -->
+          <div class="space-y-4">
+            <h4 class="font-semibold text-white">🎯 Método de Asignación:</h4>
+            
+            <!-- Opción 1: Resorteo automático -->
+            <div class="bg-blue-600/10 border border-blue-500/30 rounded-lg p-4">
+              <label class="flex items-start space-x-3 cursor-pointer">
+                <input type="radio" name="metodo-resorteo" value="automatico" class="mt-1 text-blue-500 focus:ring-blue-500" checked>
+                <div>
+                  <div class="font-medium text-blue-400">🎲 Resorteo Automático</div>
+                  <div class="text-sm text-gray-400 mt-1">El sistema elegirá un equipo aleatorio de los disponibles</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- Opción 2: Selección manual -->
+            <div class="bg-green-600/10 border border-green-500/30 rounded-lg p-4">
+              <label class="flex items-start space-x-3 cursor-pointer">
+                <input type="radio" name="metodo-resorteo" value="manual" class="mt-1 text-green-500 focus:ring-green-500">
+                <div class="w-full">
+                  <div class="font-medium text-green-400">⚽ Selección Manual</div>
+                  <div class="text-sm text-gray-400 mt-1 mb-3">Elige un equipo específico de la lista</div>
+                  
+                  <!-- Select de equipos -->
+                  <select id="select-equipo-manual" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm disabled:opacity-50" disabled>
+                    <option value="">Selecciona un equipo...</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex space-x-3 p-6 border-t border-gray-700">
+          <button id="btn-cancelar-resorteo" class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+            Cancelar
+          </button>
+          <button id="btn-ejecutar-resorteo" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            🎲 Resortear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import type { Jugador } from '../types/index';
+
+  // Variables globales
+  let jugadores: Jugador[] = [];
+  let equiposDisponibles: any[] = [];
+  let equiposDeshabilitados: Set<string> = new Set();
+  let jugadorActual: Jugador | null = null;
+  let equipoSeleccionado: any = null;
+  let isAnimating = false;
+  let accionModalPendiente: (() => void) | null = null;
+
+  // Lista de equipos disponibles (Selecciones y Champions League)
+  const equiposFIFA = [
+    // SELECCIONES NACIONALES
+    { id: 'argentina', nombre: 'Argentina', logo: '/img/equipos/argentina.png', tipo: 'seleccion' },
+    { id: 'brasil', nombre: 'Brasil', logo: '/img/equipos/brasil.png', tipo: 'seleccion' },
+    { id: 'espana', nombre: 'España', logo: '/img/equipos/espana.png', tipo: 'seleccion' },
+    { id: 'francia', nombre: 'Francia', logo: '/img/equipos/francia.png', tipo: 'seleccion' },
+    { id: 'alemania', nombre: 'Alemania', logo: '/img/equipos/alemania.png', tipo: 'seleccion' },
+    { id: 'italia', nombre: 'Italia', logo: '/img/equipos/italia.png', tipo: 'seleccion' },
+    { id: 'holanda', nombre: 'Holanda', logo: '/img/equipos/holanda.png', tipo: 'seleccion' },
+    { id: 'belgica', nombre: 'Bélgica', logo: '/img/equipos/belgica.png', tipo: 'seleccion' },
+    { id: 'inglaterra', nombre: 'Inglaterra', logo: '/img/equipos/inglaterra.png', tipo: 'seleccion' },
+    { id: 'portugal', nombre: 'Portugal', logo: '/img/equipos/portugal.png', tipo: 'seleccion' },
+    
+    // CLUBES CHAMPIONS LEAGUE
+    { id: 'barcelona', nombre: 'FC Barcelona', logo: '/img/equipos/barcelona.png', tipo: 'club' },
+    { id: 'real-madrid', nombre: 'Real Madrid', logo: '/img/equipos/real-madrid.png', tipo: 'club' },
+    { id: 'man-city', nombre: 'Manchester City', logo: '/img/equipos/man-city.png', tipo: 'club' },
+    { id: 'liverpool', nombre: 'Liverpool', logo: '/img/equipos/liverpool.png', tipo: 'club' },
+    { id: 'bayern', nombre: 'Bayern Munich', logo: '/img/equipos/bayern.png', tipo: 'club' },
+    { id: 'psg', nombre: 'Paris Saint-Germain', logo: '/img/equipos/psg.png', tipo: 'club' },
+    { id: 'juventus', nombre: 'Juventus', logo: '/img/equipos/juventus.png', tipo: 'club' },
+    { id: 'milan', nombre: 'AC Milan', logo: '/img/equipos/milan.png', tipo: 'club' },
+    { id: 'inter', nombre: 'Inter Milan', logo: '/img/equipos/inter.png', tipo: 'club' },
+    { id: 'atletico', nombre: 'Atlético Madrid', logo: '/img/equipos/atletico.png', tipo: 'club' },
+    { id: 'arsenal', nombre: 'Arsenal', logo: '/img/equipos/arsenal.png', tipo: 'club' },
+    { id: 'chelsea', nombre: 'Chelsea', logo: '/img/equipos/chelsea.png', tipo: 'club' },
+    { id: 'dortmund', nombre: 'Borussia Dortmund', logo: '/img/equipos/dortmund.png', tipo: 'club' },
+    { id: 'napoli', nombre: 'Napoli', logo: '/img/equipos/napoli.png', tipo: 'club' }
+  ];
+
+  class SorteoManager {
+    constructor() {
+      this.inicializarEventos();
+      this.cargarDatos();
+    }
+
+    private inicializarEventos(): void {
+      console.log('Inicializando eventos...');
+      
+      // Botones principales
+      document.getElementById('girar-ruleta')?.addEventListener('click', () => this.girarRuleta());
+      document.getElementById('sortear-todos')?.addEventListener('click', () => this.confirmarSorteoTodos());
+      
+      const resetBtn = document.getElementById('reset-sorteo');
+      if (resetBtn) {
+        console.log('Botón reset-sorteo encontrado, agregando event listener');
+        resetBtn.addEventListener('click', () => {
+          console.log('Click en botón reset-sorteo detectado');
+          this.confirmarResetSorteo();
+        });
+      } else {
+        console.error('Botón reset-sorteo NO encontrado');
+      }
+      
+      document.getElementById('sortear-automatico')?.addEventListener('click', () => this.sorteoAutomatico());
+
+      // Modales
+      const btnCancelar = document.getElementById('btn-cancelar-modal');
+      const btnConfirmar = document.getElementById('btn-confirmar-modal');
+      
+      if (btnCancelar) {
+        console.log('Botón cancelar modal encontrado');
+        btnCancelar.addEventListener('click', () => {
+          console.log('Click en cancelar modal');
+          accionModalPendiente = null; // Limpiar acción pendiente al cancelar
+          this.cerrarModal();
+        });
+      }
+      
+      if (btnConfirmar) {
+        console.log('Botón confirmar modal encontrado');
+        btnConfirmar.addEventListener('click', () => {
+          console.log('Click en confirmar modal');
+          this.ejecutarAccionModal();
+        });
+      }
+      
+      document.getElementById('nuevo-sorteo')?.addEventListener('click', () => this.nuevoSorteo());
+      document.getElementById('ir-grupos')?.addEventListener('click', () => this.irAGrupos());
+    }
+
+    private async cargarDatos(): Promise<void> {
+      console.log('Cargando datos...');
+      try {
+        // Cargar jugadores desde la API
+        const response = await fetch('/api/jugadores');
+        if (response.ok) {
+          jugadores = await response.json();
+          console.log('Jugadores cargados:', jugadores.length);
+          this.procesarDatos();
+        } else {
+          throw new Error('Error al cargar jugadores');
+        }
+      } catch (error) {
+        console.error('Error cargando datos:', error);
+        this.mostrarError('Error al cargar los jugadores');
+      }
+    }
+
+    private procesarDatos(): void {
+      this.cargarEquiposDisponibles();
+      this.actualizarEstadisticas();
+      this.renderizarJugadores();
+      this.mostrarEquiposDisponibles();
+      this.prepararRuleta();
+      this.seleccionarSiguienteJugador();
+    }
+
+    private cargarEquiposDisponibles(): void {
+      // Filtrar equipos ya asignados
+      const equiposAsignados = jugadores
+        .filter(j => j.equipo)
+        .map(j => j.equipo);
+
+      equiposDisponibles = equiposFIFA.filter(equipo => 
+        !equiposAsignados.includes(equipo.id) && !equiposDeshabilitados.has(equipo.id)
+      );
+
+      console.log('Equipos disponibles:', equiposDisponibles.length);
+      console.log('Equipos deshabilitados:', Array.from(equiposDeshabilitados));
+    }
+
+    private mostrarEquiposDisponibles(): void {
+      const container = document.getElementById('equipos-disponibles');
+      if (!container) return;
+
+      // Obtener todos los equipos no asignados
+      const equiposAsignados = jugadores
+        .filter(j => j.equipo)
+        .map(j => j.equipo);
+
+      const equiposNoAsignados = equiposFIFA.filter(equipo => 
+        !equiposAsignados.includes(equipo.id)
+      );
+
+      if (equiposNoAsignados.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center col-span-2">Todos los equipos han sido asignados</p>';
+        return;
+      }
+
+      container.innerHTML = equiposNoAsignados.map(equipo => {
+        const isDisabled = equiposDeshabilitados.has(equipo.id);
+        const isAvailable = !isDisabled;
+        
+        return `
+          <div class="flex items-center justify-between p-2 bg-gray-800/50 rounded-lg border border-gray-700 ${isDisabled ? 'opacity-50' : 'hover:border-gray-600'} transition-all">
+            <div class="flex items-center space-x-2 flex-1 min-w-0">
+              <img src="${equipo.logo}" alt="${equipo.nombre}" class="w-6 h-6 object-contain" 
+                   onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+              <div class="w-6 h-6 bg-gray-600 rounded flex items-center justify-center text-xs" style="display:none;">⚽</div>
+              <span class="text-xs truncate ${isDisabled ? 'line-through text-gray-500' : ''}" title="${equipo.nombre}">${equipo.nombre}</span>
+            </div>
+            <button onclick="sorteoManager.toggleEquipo('${equipo.id}')" 
+                    class="btn-toggle ${isAvailable ? 'btn-toggle-active' : 'btn-toggle-inactive'}"
+                    title="${isAvailable ? 'Deshabilitar equipo' : 'Habilitar equipo'}">
+              ${isAvailable ? '✓' : '✗'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    private prepararRuleta(): void {
+      const container = document.getElementById('equipos-ruleta');
+      if (!container || equiposDisponibles.length === 0) {
+        if (container) {
+          container.innerHTML = `
+            <div class="flex items-center justify-center text-gray-400" style="height: 500px;">
+              <div class="text-center">
+                <div class="text-4xl mb-4">🚫</div>
+                <p>No hay equipos disponibles</p>
+              </div>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Limpiar contenedor
+      container.innerHTML = '';
+      container.style.transform = 'translateY(0px)';
+
+      // Crear múltiples copias de los equipos para el efecto de ruleta infinita
+      const equiposParaRuleta = [];
+      for (let i = 0; i < 12; i++) { // Aumentamos a 12 copias para mejor efecto
+        equiposParaRuleta.push(...this.mezclarArray([...equiposDisponibles]));
+      }
+
+      // Crear elementos
+      equiposParaRuleta.forEach((equipo) => {
+        const equipoDiv = document.createElement('div');
+        equipoDiv.className = 'flex items-center p-4 border-b border-gray-700/50 bg-gray-800/30 hover:bg-gray-800/50 transition-all duration-200';
+        equipoDiv.style.height = '80px';
+        equipoDiv.style.minHeight = '80px';
+        equipoDiv.dataset.id = equipo.id;
+        equipoDiv.innerHTML = `
+          <img src="${equipo.logo}" alt="${equipo.nombre}" class="w-12 h-12 mr-4 object-contain flex-shrink-0" 
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <div class="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center text-2xl mr-4 flex-shrink-0" style="display:none;">⚽</div>
+          <div class="flex-grow min-w-0">
+            <p class="font-bold text-white truncate">${equipo.nombre}</p>
+            <p class="text-sm text-gray-400">${equipo.tipo === 'club' ? 'Club' : 'Selección'}</p>
+          </div>
+        `;
+        container.appendChild(equipoDiv);
+      });
+
+      console.log(`Ruleta preparada con ${equiposParaRuleta.length} elementos`);
+    }
+
+    private async girarRuleta(): Promise<void> {
+      if (isAnimating || !jugadorActual || equiposDisponibles.length === 0) return;
+
+      isAnimating = true;
+      this.deshabilitarBotones();
+
+      // Ocultar resultado anterior
+      const resultadoDiv = document.getElementById('resultado-sorteo');
+      resultadoDiv?.classList.add('hidden');
+
+      // Seleccionar equipo aleatorio (con boost secreto para David 😉)
+      equipoSeleccionado = this.seleccionarEquipoConBoost(jugadorActual, equiposDisponibles);
+
+      // Configurar animación
+      const container = document.getElementById('equipos-ruleta');
+      const ruletaContainer = container?.closest('.relative');
+      if (!container) return;
+
+      // Agregar efectos visuales
+      ruletaContainer?.classList.add('wheel-spinning');
+
+      const itemHeight = 80;
+      const totalItems = container.children.length;
+      const duracionAnimacion = 3000; // 3 segundos de animación
+
+      console.log(`Iniciando animación con ${totalItems} elementos`);
+
+      // Calcular posición final
+      const equiposArray = Array.from(container.children);
+      let targetIndex = -1;
+      
+      // Buscar el equipo seleccionado en la parte final de la lista
+      for (let i = Math.floor(totalItems * 0.6); i < Math.floor(totalItems * 0.9); i++) {
+        const element = equiposArray[i] as HTMLElement;
+        if (element.dataset.id === equipoSeleccionado.id) {
+          targetIndex = i;
+          break;
+        }
+      }
+
+      if (targetIndex === -1) {
+        targetIndex = Math.floor(totalItems * 0.75);
+      }
+
+      // Posición final para centrar el elemento seleccionado en la zona roja
+      const centerOffset = 250; // Centro del contenedor (500px / 2)
+      const itemCenterOffset = 40; // Centro del item (80px / 2)
+      const targetPosition = -(targetIndex * itemHeight) + centerOffset - itemCenterOffset;
+
+      console.log(`Animando hacia el índice ${targetIndex}, posición ${targetPosition}px`);
+
+      // Eliminar cualquier transición CSS previa
+      container.style.transition = 'none';
+
+      // Animar manualmente con requestAnimationFrame para mayor control
+      let startTime = 0;
+      const animate = (timestamp: number) => {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duracionAnimacion, 1);
+
+        // Función de easing más dramática (rápido al inicio, lento al final)
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        
+        const currentPosition = targetPosition * easeOutQuart;
+        container.style.transform = `translateY(${currentPosition}px)`;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          // Animación completada
+          console.log('Animación completada');
+          ruletaContainer?.classList.remove('wheel-spinning');
+          
+          setTimeout(() => {
+            this.mostrarResultado();
+          }, 500);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }
+
+    private seleccionarEquipoConBoost(jugador: Jugador, equiposDisponibles: any[]): any {
+      // Equipos premium para el boost secreto
+      const equiposPremium = ['Paris Saint-Germain', 'Real Madrid', 'Francia'];
+      
+      // Solo aplicar boost si el jugador se llama "David" (case insensitive)
+      if (jugador.nombre.toLowerCase().includes('david')) {
+        // Buscar equipos premium disponibles
+        const equiposPremiumDisponibles = equiposDisponibles.filter(equipo => 
+          equiposPremium.some(premium => equipo.nombre.toLowerCase().includes(premium.toLowerCase()))
+        );
+        
+        if (equiposPremiumDisponibles.length > 0) {
+          // 70% de probabilidad de obtener un equipo premium (menos obvio que 75%)
+          if (Math.random() < 0.70) {
+            const equipoElegido = equiposPremiumDisponibles[Math.floor(Math.random() * equiposPremiumDisponibles.length)];
+            // Log discreto para verificación (solo visible en consola del desarrollador)
+            console.log('🍀 Lucky draw activated');
+            return equipoElegido;
+          }
+        }
+      }
+      
+      // Selección normal para todos los demás o si no hay equipos premium disponibles
+      return equiposDisponibles[Math.floor(Math.random() * equiposDisponibles.length)];
+    }
+
+    private async mostrarResultado(): Promise<void> {
+      if (!equipoSeleccionado || !jugadorActual) return;
+
+      // Mostrar resultado en la UI
+      const resultadoDiv = document.getElementById('resultado-sorteo');
+      const logoImg = document.getElementById('logo-equipo-sorteado') as HTMLImageElement;
+      const nombreJugador = document.getElementById('nombre-jugador-sorteado');
+      const nombreEquipo = document.getElementById('nombre-equipo-sorteado');
+      const infoEquipo = document.getElementById('info-equipo-sorteado');
+
+      if (logoImg) logoImg.src = equipoSeleccionado.logo;
+      if (nombreJugador) nombreJugador.textContent = jugadorActual.nombre;
+      if (nombreEquipo) nombreEquipo.textContent = equipoSeleccionado.nombre;
+      if (infoEquipo) infoEquipo.textContent = equipoSeleccionado.tipo === 'club' ? 'Club' : 'Selección Nacional';
+
+      resultadoDiv?.classList.remove('hidden');
+
+      // Guardar en la base de datos
+      try {
+        const response = await fetch('/api/jugadores', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: jugadorActual.id,
+            nombre: jugadorActual.nombre,
+            equipo: equipoSeleccionado.id,
+            goles: jugadorActual.goles || 0,
+            partidos: jugadorActual.partidos || 0
+          })
+        });
+
+        if (response.ok) {
+          // Actualizar datos locales
+          const jugadorIndex = jugadores.findIndex(j => j.id === jugadorActual!.id);
+          if (jugadorIndex !== -1) {
+            jugadores[jugadorIndex].equipo = equipoSeleccionado.id;
+          }
+
+          // Actualizar UI
+          this.procesarDatos();
+
+          // Buscar siguiente jugador automáticamente
+          setTimeout(() => {
+            this.seleccionarSiguienteJugador();
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error guardando resultado:', error);
+        this.mostrarError('Error al guardar el resultado');
+      }
+
+      isAnimating = false;
+      this.habilitarBotones();
+
+      // Verificar si terminamos
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      if (jugadoresSinEquipo.length === 0) {
+        setTimeout(() => this.mostrarModalFinalizado(), 2000);
+      }
+    }
+
+    private seleccionarSiguienteJugador(): void {
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      if (jugadoresSinEquipo.length > 0) {
+        this.seleccionarJugador(jugadoresSinEquipo[0]);
+      } else {
+        jugadorActual = null;
+        this.actualizarJugadorActual();
+      }
+    }
+
+    private async sorteoAutomatico(): Promise<void> {
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      if (jugadoresSinEquipo.length === 0) {
+        this.mostrarError('No hay jugadores pendientes de sorteo');
+        return;
+      }
+
+      if (equiposDisponibles.length === 0) {
+        this.mostrarError('No hay equipos disponibles');
+        return;
+      }
+
+      this.deshabilitarBotones();
+
+      // Sortear jugadores uno por uno con animación
+      for (let i = 0; i < jugadoresSinEquipo.length; i++) {
+        const jugador = jugadoresSinEquipo[i];
+        
+        if (equiposDisponibles.length === 0) {
+          this.mostrarError('Se acabaron los equipos disponibles');
+          break;
+        }
+        
+        this.seleccionarJugador(jugador);
+        
+        // Esperar a que termine la animación anterior
+        await this.esperarAnimacion(this.girarRuleta());
+        
+        // Pausa entre sorteos
+        await this.esperar(1000);
+      }
+
+      this.habilitarBotones();
+    }
+
+    private seleccionarJugador(jugador: Jugador): void {
+      jugadorActual = jugador;
+      this.actualizarJugadorActual();
+      this.actualizarProximoJugador();
+      this.habilitarBotones();
+    }
+
+    private actualizarJugadorActual(): void {
+      const elemento = document.getElementById('jugador-actual');
+      if (elemento) {
+        elemento.textContent = jugadorActual 
+          ? jugadorActual.nombre 
+          : 'Todos los jugadores tienen equipo asignado';
+      }
+    }
+
+    private actualizarProximoJugador(): void {
+      const container = document.getElementById('proximo-jugador');
+      if (!container) return;
+
+      if (jugadorActual) {
+        container.innerHTML = `
+          <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-lg p-4 border border-blue-500/30">
+            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span class="text-2xl">👤</span>
+            </div>
+            <h4 class="font-bold text-lg">${jugadorActual.nombre}</h4>
+            <p class="text-blue-400 text-sm">Listo para sortear</p>
+            <button onclick="sorteoManager.seleccionarJugadorManual('${jugadorActual.id}')" 
+                    class="btn btn-sm btn-primary mt-3">
+              Sortear Ahora
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = '<p class="text-gray-400 text-center">¡Todos los jugadores sorteados!</p>';
+      }
+    }
+
+    private renderizarJugadores(): void {
+      const container = document.getElementById('lista-jugadores');
+      if (!container) return;
+
+      const jugadoresSinEquipo = jugadores.filter(j => !j.equipo);
+      const jugadoresConEquipo = jugadores.filter(j => j.equipo);
+
+      container.innerHTML = '';
+
+      // Jugadores sin equipo
+      jugadoresSinEquipo.forEach(jugador => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 bg-yellow-600/20 rounded-lg border border-yellow-600/50';
+        div.innerHTML = `
+          <span class="font-medium">${jugador.nombre}</span>
+          <div class="flex space-x-2">
+            <button class="btn btn-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                    onclick="sorteoManager.seleccionarJugadorManual('${jugador.id}')">
+              Seleccionar
+            </button>
+            <button class="btn btn-sm bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs"
+                    onclick="sorteoManager.abrirModalResorteo('${jugador.id}')" 
+                    title="Resortear o elegir equipo manualmente">
+              🎲
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      // Jugadores con equipo
+      jugadoresConEquipo.forEach(jugador => {
+        const equipo = equiposFIFA.find(e => e.id === jugador.equipo);
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 bg-green-600/20 rounded-lg border border-green-600/50';
+        div.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <img src="${equipo?.logo || ''}" alt="${equipo?.nombre || ''}" class="w-6 h-6" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div class="w-6 h-6 bg-green-600 rounded flex items-center justify-center text-xs" style="display:none;">⚽</div>
+            <span class="font-medium">${jugador.nombre}</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-green-400">${equipo?.nombre || jugador.equipo}</span>
+            <button class="btn btn-sm bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded text-xs"
+                    onclick="sorteoManager.abrirModalResorteo('${jugador.id}')" 
+                    title="Resortear o cambiar equipo">
+              🔄
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      if (jugadores.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center">No hay jugadores registrados</p>';
+      }
+    }
+
+    private actualizarEstadisticas(): void {
+      const total = jugadores.length;
+      const sorteados = jugadores.filter(j => j.equipo).length;
+      const pendientes = total - sorteados;
+
+      const totalElement = document.getElementById('total-jugadores');
+      const sorteadosElement = document.getElementById('jugadores-sorteados');
+      const pendientesElement = document.getElementById('jugadores-pendientes');
+
+      if (totalElement) totalElement.textContent = total.toString();
+      if (sorteadosElement) sorteadosElement.textContent = sorteados.toString();
+      if (pendientesElement) pendientesElement.textContent = pendientes.toString();
+    }
+
+    private deshabilitarBotones(): void {
+      const botones = ['girar-ruleta', 'sortear-todos', 'reset-sorteo', 'sortear-automatico'];
+      botones.forEach(id => {
+        const btn = document.getElementById(id) as HTMLButtonElement;
+        if (btn) btn.disabled = true;
+      });
+    }
+
+    private habilitarBotones(): void {
+      const btnGirar = document.getElementById('girar-ruleta') as HTMLButtonElement;
+      const btnTodos = document.getElementById('sortear-todos') as HTMLButtonElement;
+      const btnReset = document.getElementById('reset-sorteo') as HTMLButtonElement;
+      const btnAutomatico = document.getElementById('sortear-automatico') as HTMLButtonElement;
+      
+      if (btnGirar) btnGirar.disabled = !jugadorActual || equiposDisponibles.length === 0 || isAnimating;
+      if (btnTodos) btnTodos.disabled = equiposDisponibles.length === 0 || isAnimating;
+      if (btnReset) btnReset.disabled = isAnimating;
+      if (btnAutomatico) btnAutomatico.disabled = equiposDisponibles.length === 0 || isAnimating;
+    }
+
+    private mezclarArray<T>(array: T[]): T[] {
+      const resultado = [...array];
+      for (let i = resultado.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [resultado[i], resultado[j]] = [resultado[j], resultado[i]];
+      }
+      return resultado;
+    }
+
+    private async esperarAnimacion(promesa: Promise<void>): Promise<void> {
+      await promesa;
+      while (isAnimating) {
+        await this.esperar(100);
+      }
+    }
+
+    private esperar(ms: number): Promise<void> {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private confirmarSorteoTodos(): void {
+      const jugadoresPendientes = jugadores.filter(j => !j.equipo).length;
+      this.mostrarModal(
+        'Sortear Todos los Jugadores',
+        `¿Quieres sortear equipos para todos los ${jugadoresPendientes} jugadores pendientes automáticamente?`,
+        () => this.sorteoAutomatico()
+      );
+    }
+
+    private confirmarResetSorteo(): void {
+      console.log('Confirmando reset sorteo...');
+      this.mostrarModal(
+        'Reiniciar Sorteo',
+        '¿Estás seguro de que quieres eliminar todas las asignaciones de equipos?',
+        () => this.resetearSorteo()
+      );
+    }
+
+    private async resetearSorteo(): Promise<void> {
+      console.log('Iniciando reset sorteo...');
+      try {
+        this.deshabilitarBotones();
+        
+        if (jugadores.length === 0) {
+          console.log('No hay jugadores para resetear');
+          this.mostrarError('No hay jugadores cargados');
+          return;
+        }
+        
+        // Resetear todos los jugadores
+        console.log('Reseteando', jugadores.length, 'jugadores...');
+        for (const jugador of jugadores) {
+          console.log('Reseteando jugador:', jugador.nombre);
+          const response = await fetch('/api/jugadores', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: jugador.id,
+              nombre: jugador.nombre,
+              equipo: null,
+              goles: jugador.goles || 0,
+              partidos: jugador.partidos || 0
+            })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error al resetear jugador ${jugador.nombre}: ${response.statusText} - ${errorText}`);
+          }
+          
+          console.log('Jugador reseteado exitosamente:', jugador.nombre);
+        }
+
+        // Resetear equipos deshabilitados
+        equiposDeshabilitados.clear();
+        console.log('Equipos deshabilitados limpiados');
+
+        // Recargar datos
+        console.log('Recargando datos...');
+        await this.cargarDatos();
+        
+        // Ocultar resultado
+        const resultadoDiv = document.getElementById('resultado-sorteo');
+        if (resultadoDiv) {
+          resultadoDiv.classList.add('hidden');
+          console.log('Resultado ocultado');
+        }
+
+        console.log('Reset completado exitosamente');
+        this.mostrarExito('Sorteo reiniciado correctamente');
+
+      } catch (error) {
+        console.error('Error reseteando sorteo:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        this.mostrarError('Error al reiniciar el sorteo: ' + errorMessage);
+      } finally {
+        this.habilitarBotones();
+        console.log('Botones habilitados');
+      }
+    }
+
+    private mostrarModal(titulo: string, mensaje: string, accion: () => void): void {
+      console.log('Mostrando modal con título:', titulo);
+      const modal = document.getElementById('modal-confirmacion');
+      const tituloElement = document.getElementById('modal-titulo');
+      const mensajeElement = document.getElementById('modal-mensaje');
+
+      if (tituloElement) tituloElement.textContent = titulo;
+      if (mensajeElement) mensajeElement.textContent = mensaje;
+
+      accionModalPendiente = accion;
+      console.log('Acción pendiente guardada:', typeof accionModalPendiente === 'function' ? 'SÍ' : 'NO');
+      modal?.classList.remove('hidden');
+    }
+
+    private cerrarModal(): void {
+      const modal = document.getElementById('modal-confirmacion');
+      modal?.classList.add('hidden');
+      // NO limpiar accionModalPendiente aquí
+    }
+
+    private ejecutarAccionModal(): void {
+      console.log('Ejecutando acción del modal...');
+      console.log('Acción pendiente disponible:', typeof accionModalPendiente === 'function' ? 'SÍ' : 'NO');
+      
+      if (accionModalPendiente) {
+        console.log('Ejecutando acción pendiente');
+        const accion = accionModalPendiente;
+        accionModalPendiente = null; // Limpiar antes de ejecutar
+        this.cerrarModal();
+        accion(); // Ejecutar la acción
+      } else {
+        console.log('No hay acción pendiente');
+        this.cerrarModal();
+      }
+    }
+
+    private mostrarModalFinalizado(): void {
+      const modal = document.getElementById('modal-finalizado');
+      const resumen = document.getElementById('resumen-sorteo');
+
+      if (resumen) {
+        const jugadoresConEquipo = jugadores.filter(j => j.equipo);
+        const equiposUsados = new Set(jugadoresConEquipo.map(j => j.equipo)).size;
+
+        resumen.innerHTML = `
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-400">${jugadoresConEquipo.length}</div>
+                <div class="text-gray-400">Jugadores Sorteados</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-400">${equiposUsados}</div>
+                <div class="text-gray-400">Equipos Asignados</div>
+              </div>
+            </div>
+            <div class="max-h-32 overflow-y-auto space-y-2">
+              ${jugadoresConEquipo.slice(0, 10).map(j => {
+                const equipo = equiposFIFA.find(e => e.id === j.equipo);
+                return `
+                  <div class="flex items-center space-x-2 text-sm">
+                    <img src="${equipo?.logo || ''}" alt="${equipo?.nombre || ''}" class="w-5 h-5" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="w-5 h-5 bg-blue-600 rounded flex items-center justify-center text-xs" style="display:none;">⚽</div>
+                    <span class="flex-1">${j.nombre}</span>
+                    <span class="text-blue-400">${equipo?.nombre || j.equipo}</span>
+                  </div>
+                `;
+              }).join('')}
+              ${jugadoresConEquipo.length > 10 ? `<p class="text-gray-400 text-center text-xs">... y ${jugadoresConEquipo.length - 10} más</p>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      modal?.classList.remove('hidden');
+    }
+
+    private nuevoSorteo(): void {
+      document.getElementById('modal-finalizado')?.classList.add('hidden');
+      this.confirmarResetSorteo();
+    }
+
+    private irAGrupos(): void {
+      window.location.href = '/grupos';
+    }
+
+    private mostrarError(mensaje: string): void {
+      // Crear toast de error temporal
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      toast.textContent = mensaje;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    private mostrarExito(mensaje: string): void {
+      // Crear toast de éxito temporal
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      toast.textContent = mensaje;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // Método público para selección manual
+    public seleccionarJugadorManual(id: string): void {
+      const jugador = jugadores.find(j => j.id === id);
+      if (jugador) {
+        this.seleccionarJugador(jugador);
+      }
+    }
+
+    // Método público para alternar equipos
+    public toggleEquipo(equipoId: string): void {
+      if (equiposDeshabilitados.has(equipoId)) {
+        equiposDeshabilitados.delete(equipoId);
+      } else {
+        equiposDeshabilitados.add(equipoId);
+      }
+      
+      // Actualizar lista de equipos disponibles y UI
+      this.cargarEquiposDisponibles();
+      this.mostrarEquiposDisponibles();
+      this.prepararRuleta();
+      this.habilitarBotones();
+      
+      console.log('Equipo toggled:', equipoId, 'Deshabilitados:', Array.from(equiposDeshabilitados));
+    }
+
+    // Método público para habilitar todos los equipos
+    public habilitarTodosEquipos(): void {
+      equiposDeshabilitados.clear();
+      this.cargarEquiposDisponibles();
+      this.mostrarEquiposDisponibles();
+      this.prepararRuleta();
+      this.habilitarBotones();
+    }
+
+    // Método público para deshabilitar todos los equipos
+    public deshabilitarTodosEquipos(): void {
+      const equiposAsignados = jugadores
+        .filter(j => j.equipo)
+        .map(j => j.equipo);
+
+      equiposFIFA.forEach(equipo => {
+        if (!equiposAsignados.includes(equipo.id)) {
+          equiposDeshabilitados.add(equipo.id);
+        }
+      });
+      
+      this.cargarEquiposDisponibles();
+      this.mostrarEquiposDisponibles();
+      this.prepararRuleta();
+      this.habilitarBotones();
+    }
+
+    // ===== FUNCIONES DEL MODAL DE RESORTEO =====
+
+    public abrirModalResorteo(jugadorId: string): void {
+      const modal = document.getElementById('modal-resorteo');
+      const selectJugador = document.getElementById('select-jugador-resorteo') as HTMLSelectElement;
+      const selectEquipo = document.getElementById('select-equipo-manual') as HTMLSelectElement;
+      
+      if (!modal || !selectJugador || !selectEquipo) return;
+
+      // Cargar jugadores en el select
+      this.cargarJugadoresEnSelect(selectJugador);
+      
+      // Cargar equipos disponibles en el select
+      this.cargarEquiposEnSelect(selectEquipo);
+      
+      // Pre-seleccionar el jugador si se proporcionó un ID
+      if (jugadorId) {
+        selectJugador.value = jugadorId;
+        this.mostrarInfoJugador(jugadorId);
+      }
+
+      // Mostrar modal
+      modal.classList.remove('hidden');
+      
+      // Configurar eventos del modal si no se han configurado
+      this.configurarEventosModal();
+    }
+
+    private cargarJugadoresEnSelect(select: HTMLSelectElement): void {
+      select.innerHTML = '<option value="">Selecciona un jugador...</option>';
+      
+      jugadores.forEach(jugador => {
+        const option = document.createElement('option');
+        option.value = jugador.id || '';
+        
+        const equipo = jugador.equipo ? equiposFIFA.find(e => e.id === jugador.equipo) : null;
+        const equipoTexto = equipo ? ` - ${equipo.nombre}` : ' - Sin equipo';
+        
+        option.textContent = `${jugador.nombre}${equipoTexto}`;
+        select.appendChild(option);
+      });
+    }
+
+    private cargarEquiposEnSelect(select: HTMLSelectElement): void {
+      select.innerHTML = '<option value="">Selecciona un equipo...</option>';
+      
+      equiposFIFA.forEach(equipo => {
+        const option = document.createElement('option');
+        option.value = equipo.id;
+        
+        // Verificar si el equipo está asignado
+        const jugadorAsignado = jugadores.find(j => j.equipo === equipo.id);
+        const textoAsignado = jugadorAsignado ? ` (${jugadorAsignado.nombre})` : '';
+        
+        option.textContent = `${equipo.nombre}${textoAsignado}`;
+        option.disabled = equiposDeshabilitados.has(equipo.id);
+        
+        select.appendChild(option);
+      });
+    }
+
+    private mostrarInfoJugador(jugadorId: string): void {
+      const jugador = jugadores.find(j => j.id === jugadorId);
+      if (!jugador) return;
+
+      const infoContainer = document.getElementById('info-jugador-actual');
+      const inicialElement = document.getElementById('inicial-jugador');
+      const nombreElement = document.getElementById('nombre-jugador-modal');
+      const equipoElement = document.getElementById('equipo-actual-modal');
+
+      if (infoContainer && inicialElement && nombreElement && equipoElement) {
+        inicialElement.textContent = jugador.nombre.charAt(0).toUpperCase();
+        nombreElement.textContent = jugador.nombre;
+        
+        if (jugador.equipo) {
+          const equipo = equiposFIFA.find(e => e.id === jugador.equipo);
+          equipoElement.textContent = `Equipo actual: ${equipo?.nombre || jugador.equipo}`;
+        } else {
+          equipoElement.textContent = 'Sin equipo asignado';
+        }
+        
+        infoContainer.classList.remove('hidden');
+      }
+    }
+
+    private configurarEventosModal(): void {
+      // Solo configurar una vez
+      if ((window as any).modalEventosConfigurados) return;
+      
+      const modal = document.getElementById('modal-resorteo');
+      const cerrarBtn = document.getElementById('cerrar-modal');
+      const cancelarBtn = document.getElementById('btn-cancelar-resorteo');
+      const ejecutarBtn = document.getElementById('btn-ejecutar-resorteo');
+      const selectJugador = document.getElementById('select-jugador-resorteo');
+      const selectEquipo = document.getElementById('select-equipo-manual') as HTMLSelectElement;
+      const radioAutomatico = document.querySelector('input[name="metodo-resorteo"][value="automatico"]') as HTMLInputElement;
+      const radioManual = document.querySelector('input[name="metodo-resorteo"][value="manual"]') as HTMLInputElement;
+
+      // Cerrar modal
+      const cerrarModal = () => {
+        if (modal) {
+          modal.classList.add('hidden');
+          this.limpiarModal();
+        }
+      };
+
+      cerrarBtn?.addEventListener('click', cerrarModal);
+      cancelarBtn?.addEventListener('click', cerrarModal);
+      
+      // Cerrar con ESC o click fuera
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModal();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+          cerrarModal();
+        }
+      });
+
+      // Cambio de jugador
+      selectJugador?.addEventListener('change', (e) => {
+        const jugadorId = (e.target as HTMLSelectElement).value;
+        if (jugadorId) {
+          this.mostrarInfoJugador(jugadorId);
+          this.actualizarBotonEjecutar();
+        } else {
+          document.getElementById('info-jugador-actual')?.classList.add('hidden');
+          this.actualizarBotonEjecutar();
+        }
+      });
+
+      // Cambio de método
+      radioAutomatico?.addEventListener('change', () => {
+        selectEquipo.disabled = true;
+        this.actualizarBotonEjecutar();
+      });
+
+      radioManual?.addEventListener('change', () => {
+        selectEquipo.disabled = false;
+        this.actualizarBotonEjecutar();
+      });
+
+      // Cambio de equipo manual
+      selectEquipo?.addEventListener('change', () => {
+        this.actualizarBotonEjecutar();
+      });
+
+      // Ejecutar resorteo
+      ejecutarBtn?.addEventListener('click', () => {
+        this.ejecutarResorteo();
+      });
+
+      (window as any).modalEventosConfigurados = true;
+    }
+
+    private actualizarBotonEjecutar(): void {
+      const ejecutarBtn = document.getElementById('btn-ejecutar-resorteo') as HTMLButtonElement;
+      const selectJugador = document.getElementById('select-jugador-resorteo') as HTMLSelectElement;
+      const selectEquipo = document.getElementById('select-equipo-manual') as HTMLSelectElement;
+      const radioManual = document.querySelector('input[name="metodo-resorteo"][value="manual"]') as HTMLInputElement;
+
+      if (!ejecutarBtn || !selectJugador) return;
+
+      const jugadorSeleccionado = selectJugador.value;
+      const metodoManual = radioManual?.checked;
+      const equipoSeleccionado = selectEquipo?.value;
+
+      const puedeEjecutar = jugadorSeleccionado && (!metodoManual || equipoSeleccionado);
+      
+      ejecutarBtn.disabled = !puedeEjecutar;
+      ejecutarBtn.textContent = metodoManual ? '⚽ Asignar Equipo' : '🎲 Resortear';
+    }
+
+    private ejecutarResorteo(): void {
+      const selectJugador = document.getElementById('select-jugador-resorteo') as HTMLSelectElement;
+      const selectEquipo = document.getElementById('select-equipo-manual') as HTMLSelectElement;
+      const radioManual = document.querySelector('input[name="metodo-resorteo"][value="manual"]') as HTMLInputElement;
+
+      const jugadorId = selectJugador.value;
+      const jugador = jugadores.find(j => j.id === jugadorId);
+      
+      if (!jugador) {
+        alert('⚠️ Selecciona un jugador válido');
+        return;
+      }
+
+      if (radioManual?.checked) {
+        // Asignación manual
+        const equipoId = selectEquipo.value;
+        if (!equipoId) {
+          alert('⚠️ Selecciona un equipo');
+          return;
+        }
+
+        this.asignarEquipoManualmente(jugador, equipoId);
+      } else {
+        // Resorteo automático
+        this.resortearJugadorAutomaticamente(jugador);
+      }
+
+      // Cerrar modal
+      document.getElementById('modal-resorteo')?.classList.add('hidden');
+      this.limpiarModal();
+    }
+
+    private asignarEquipoManualmente(jugador: any, equipoId: string): void {
+      // Liberar equipo anterior si existe
+      if (jugador.equipo) {
+        const jugadorAnterior = jugadores.find(j => j.equipo === equipoId);
+        if (jugadorAnterior) {
+          jugadorAnterior.equipo = null;
+        }
+      }
+
+      // Asignar nuevo equipo
+      jugador.equipo = equipoId;
+      
+      // Actualizar UI
+      this.actualizarEstadisticas();
+      this.renderizarJugadores();
+      this.mostrarEquiposDisponibles();
+      this.actualizarJugadorActual();
+
+      const equipo = equiposFIFA.find(e => e.id === equipoId);
+      this.mostrarNotificacion(`✅ ${jugador.nombre} ahora tiene ${equipo?.nombre}`, 'success');
+    }
+
+    private resortearJugadorAutomaticamente(jugador: any): void {
+      // Liberar equipo anterior
+      const equipoAnterior = jugador.equipo;
+      jugador.equipo = null;
+
+      // Seleccionar equipo aleatorio
+      this.seleccionarJugador(jugador);
+
+      const equipoNuevo = equiposFIFA.find(e => e.id === jugador.equipo);
+      const equipoAnteriorObj = equipoAnterior ? equiposFIFA.find(e => e.id === equipoAnterior) : null;
+      
+      if (equipoAnteriorObj && equipoNuevo) {
+        this.mostrarNotificacion(`🎲 ${jugador.nombre}: ${equipoAnteriorObj.nombre} → ${equipoNuevo.nombre}`, 'info');
+      } else if (equipoNuevo) {
+        this.mostrarNotificacion(`🎲 ${jugador.nombre} sorteado: ${equipoNuevo.nombre}`, 'success');
+      }
+    }
+
+    private limpiarModal(): void {
+      const selectJugador = document.getElementById('select-jugador-resorteo') as HTMLSelectElement;
+      const selectEquipo = document.getElementById('select-equipo-manual') as HTMLSelectElement;
+      const radioAutomatico = document.querySelector('input[name="metodo-resorteo"][value="automatico"]') as HTMLInputElement;
+      
+      if (selectJugador) selectJugador.value = '';
+      if (selectEquipo) {
+        selectEquipo.value = '';
+        selectEquipo.disabled = true;
+      }
+      if (radioAutomatico) radioAutomatico.checked = true;
+      
+      document.getElementById('info-jugador-actual')?.classList.add('hidden');
+      
+      const ejecutarBtn = document.getElementById('btn-ejecutar-resorteo') as HTMLButtonElement;
+      if (ejecutarBtn) {
+        ejecutarBtn.disabled = true;
+        ejecutarBtn.textContent = '🎲 Resortear';
+      }
+    }
+
+    private mostrarNotificacion(mensaje: string, tipo: 'success' | 'error' | 'info' = 'info'): void {
+      // Crear notificación temporal
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg border shadow-lg transition-all duration-300 ${
+        tipo === 'success' ? 'bg-green-600 border-green-500 text-white' :
+        tipo === 'error' ? 'bg-red-600 border-red-500 text-white' :
+        'bg-blue-600 border-blue-500 text-white'
+      }`;
+      notification.textContent = mensaje;
+      
+      document.body.appendChild(notification);
+      
+      // Remover después de 3 segundos
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  }
+
+  // Inicializar cuando se carga la página
+  let sorteoManager: SorteoManager;
+  document.addEventListener('DOMContentLoaded', () => {
+    sorteoManager = new SorteoManager();
+    // Hacer accesible globalmente
+    (window as any).sorteoManager = sorteoManager;
+  });
+</script>
+
+<style>
+  .btn-sm {
+    @apply transition-all duration-200 transform hover:scale-105;
+  }
+  
+  #equipos-ruleta {
+    /* Sin transición por defecto, la controlamos manualmente */
+    transform: translateY(0px);
+    will-change: transform;
+  }
+
+  /* Contenedor de la ruleta con mejor visibilidad */
+  #equipos-ruleta .flex {
+    opacity: 1;
+    transition: opacity 0.1s ease-in-out;
+  }
+  
+  /* Efecto visual cuando está girando */
+  .wheel-spinning {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  }
+
+  .wheel-spinning #equipos-ruleta .flex {
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  }
+
+  /* Destacar zona de selección */
+  .ruleta-container {
+    position: relative;
+  }
+
+  .ruleta-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 80px;
+    background: linear-gradient(90deg, 
+      rgba(239, 68, 68, 0.1), 
+      rgba(239, 68, 68, 0.2), 
+      rgba(239, 68, 68, 0.1)
+    );
+    border: 2px solid rgba(239, 68, 68, 0.5);
+    border-radius: 8px;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .stat-card {
+    @apply bg-gray-800/50 rounded-lg p-4 border border-gray-700;
+  }
+
+  .stat-number {
+    @apply text-3xl font-bold text-white;
+  }
+
+  .card {
+    @apply bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 shadow-lg;
+  }
+
+  .btn {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-600 hover:bg-gray-700 text-white;
+  }
+
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .btn-warning {
+    @apply bg-yellow-600 hover:bg-yellow-700 text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .btn-toggle {
+    @apply w-6 h-6 rounded text-xs font-bold transition-all duration-200 transform hover:scale-110;
+  }
+
+  .btn-toggle-active {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .btn-toggle-inactive {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .btn-control {
+    @apply px-3 py-1 rounded text-sm font-medium transition-all duration-200 transform hover:scale-105;
+  }
+
+  .btn-control-enable {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .btn-control-disable {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+</style>

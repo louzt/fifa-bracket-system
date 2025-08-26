@@ -298,16 +298,36 @@ app.post('/api/grupos/generar', (req, res) => {
           { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(mitad), partidos: [] }
         ];
       } else if (totalJugadores <= 12) {
-        // 9-12 jugadores: tres grupos, distribuidos de manera óptima
-        const tamañoGrupoA = Math.ceil(totalJugadores / 3);
-        const tamañoGrupoB = Math.ceil((totalJugadores - tamañoGrupoA) / 2);
-        const tamañoGrupoC = totalJugadores - tamañoGrupoA - tamañoGrupoB;
-        
-        grupos = [
-          { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoGrupoA), partidos: [] },
-          { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoGrupoA, tamañoGrupoA + tamañoGrupoB), partidos: [] },
-          { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(tamañoGrupoA + tamañoGrupoB), partidos: [] }
-        ];
+        // 9-12 jugadores: crear grupos equilibrados
+        if (totalJugadores === 9) {
+          // 9 jugadores: 3 grupos de 3 (perfecto)
+          grupos = [
+            { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 3), partidos: [] },
+            { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(3, 6), partidos: [] },
+            { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(6, 9), partidos: [] }
+          ];
+        } else if (totalJugadores === 10) {
+          // 10 jugadores: 2 grupos de 3 y 1 grupo de 4
+          grupos = [
+            { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 3), partidos: [] },
+            { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(3, 6), partidos: [] },
+            { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(6, 10), partidos: [] }
+          ];
+        } else if (totalJugadores === 11) {
+          // 11 jugadores: 2 grupos de 4 y 1 grupo de 3
+          grupos = [
+            { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 4), partidos: [] },
+            { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(4, 8), partidos: [] },
+            { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(8, 11), partidos: [] }
+          ];
+        } else {
+          // 12 jugadores: 3 grupos de 4 (perfecto)
+          grupos = [
+            { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 4), partidos: [] },
+            { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(4, 8), partidos: [] },
+            { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(8, 12), partidos: [] }
+          ];
+        }
       } else {
         // 13+ jugadores: cuatro grupos
         const tamañoPromedio = Math.ceil(totalJugadores / 4);
@@ -334,13 +354,112 @@ app.post('/api/grupos/generar', (req, res) => {
 
 // API - Eliminatorias
 app.get('/api/eliminatorias', (req, res) => {
-  eliminatoriasDB.find({}).exec((err, docs) => {
+  // Buscar específicamente la estructura con ID ElIMinAtOriasNuevas
+  eliminatoriasDB.find({_id: "ElIMinAtOriasNuevas"}).exec(async (err, docsNuevos) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
     }
+    
+    // Si encontramos la estructura nueva, usar esa
+    if (docsNuevos.length > 0) {
+      console.log("Usando estructura específica con formato correcto de clasificatoria");
+      res.json(docsNuevos);
+      return;
+    }
+    
+    // Buscar todas las estructuras si no encontramos la específica
+    eliminatoriasDB.find({}).exec(async (err, docs) => {
+      if (err) {
+        res.status(500).json({ error: err });
+        return;
+      }
+      
+      // Verificar si tenemos datos y si la estructura es la correcta para 3 grupos
+      if (docs.length > 0) {
+        const elim = docs[0];
+      
+      // Si estamos en un torneo de 3 grupos pero la estructura tiene cuartos,
+      // necesitamos corregirla
+      const tieneCuartos = elim.hasOwnProperty('cuartos1');
+      const tieneClasificatoria = elim.hasOwnProperty('clasificatoria');
+      
+      // En un torneo de 3 grupos, deberíamos tener clasificatoria y no cuartos
+      const estructuraIncorrecta = tieneCuartos && !tieneClasificatoria;
+      
+      if (estructuraIncorrecta) {
+        console.log("Detectada estructura incorrecta en eliminatorias, corrigiendo...");
+        
+        // Crear la estructura correcta con clasificatoria
+        // Primero obtener los grupos para verificar los clasificados
+        const grupos = await new Promise((resolve) => {
+          gruposDB.find({}).exec((err, docs) => {
+            if (err) resolve([]);
+            else resolve(docs);
+          });
+        });
+        
+        const numGrupos = grupos.length;
+        console.log(`Detectados ${numGrupos} grupos en la base de datos`);
+        
+        if (numGrupos === 3) {
+          console.log("Corrigiendo estructura para torneo de 3 grupos");
+          
+          // Borrar la estructura actual
+          await new Promise((resolve) => {
+            eliminatoriasDB.remove({}, { multi: true }, (err) => {
+              resolve();
+            });
+          });
+          
+          // Crear la estructura correcta
+          const nuevaEstructura = {
+            semifinal1: {
+              jugador1: elim.semifinal1?.jugador1 || null, 
+              jugador2: elim.semifinal1?.jugador2 || null,
+              resultado: elim.semifinal1?.resultado || null
+            },
+            clasificatoria: {
+              jugador1: elim.cuartos2?.jugador2 || null,
+              jugador2: elim.cuartos3?.jugador2 || null,
+              resultado: null
+            },
+            semifinal2: {
+              jugador1: elim.semifinal2?.jugador1 || null,
+              jugador2: null, // Se llenará con el ganador de la clasificatoria
+              resultado: elim.semifinal2?.resultado || null
+            },
+            final: {
+              jugador1: null, // Ganador semifinal1
+              jugador2: null, // Ganador semifinal2
+              resultado: null
+            }
+          };
+          
+          // Insertar la estructura corregida
+          await new Promise((resolve) => {
+            eliminatoriasDB.insert(nuevaEstructura, (err) => {
+              resolve();
+            });
+          });
+          
+          // Obtener la estructura actualizada
+          const docsActualizados = await new Promise((resolve) => {
+            eliminatoriasDB.find({}).exec((err, docs) => {
+              if (err) resolve([]);
+              else resolve(docs);
+            });
+          });
+          
+          res.json(docsActualizados);
+          return;
+        }
+      }
+    }
+    
     res.json(docs);
-  });
+      });
+    });
 });
 
 app.post('/api/eliminatorias/generar', (req, res) => {
@@ -350,6 +469,8 @@ app.post('/api/eliminatorias/generar', (req, res) => {
       res.status(500).json({ error: err });
       return;
     }
+    
+    console.log(`Generando eliminatorias para ${grupos.length} grupos`);
     
     // Verificar si todos los partidos de grupo han sido jugados
     let todosPartidosJugados = true;
@@ -387,115 +508,211 @@ app.post('/api/eliminatorias/generar', (req, res) => {
       });
     }
     
-    // Obtener clasificados de cada grupo
-    const clasificados = [];
-    
-    grupos.forEach(grupo => {
-      const jugadoresOrdenados = ordenarJugadoresPorPuntos(grupo.jugadores);
-      
-      // Determinar cuántos clasifican por grupo
-      let numClasificados = 2;
-      if (grupos.length === 1) {
-        numClasificados = 4; // Si es un solo grupo, clasifican 4
-      } else if (grupos.length === 2) {
-        numClasificados = 2; // Si son 2 grupos, clasifican 2 de cada grupo
-      } else if (grupos.length >= 3) {
-        numClasificados = 2; // Si son 3 o más grupos, clasifican 2 de cada grupo
-      }
-      
-      // No podemos clasificar más jugadores de los que tiene el grupo
-      numClasificados = Math.min(numClasificados, jugadoresOrdenados.length);
-      
-      // Agregar los clasificados con su posición y grupo
-      for (let i = 0; i < numClasificados; i++) {
-        clasificados.push({
-          jugador: jugadoresOrdenados[i],
-          posicion: i + 1,
-          grupo: grupo.nombre
-        });
-      }
-    });
-    
-    // Crear estructura de eliminatorias según la cantidad de clasificados
+    // PASO 1: Obtener los mejores jugadores de cada grupo
     let eliminatorias = {};
     
-    if (clasificados.length <= 2) {
-      // Con 1 o 2 clasificados, directo a la final
-      eliminatorias = {
-        final: {
-          jugador1: clasificados[0]?.jugador || null,
-          jugador2: clasificados[1]?.jugador || null,
-          resultado: null
-        }
-      };
-    } else if (clasificados.length <= 4) {
-      // Con 3 o 4 clasificados, dos semifinales y final
+    // IMPORTANTE: CASO ESPECÍFICO PARA 3 GRUPOS
+    if (grupos.length === 3) {
+      console.log("CASO ESPECIAL: Detectado torneo con 3 grupos exactamente");
+      
+      // En este caso, usaremos una estructura fija:
+      // - Semifinal 1: 1° del Grupo A vs 2° del Grupo B
+      // - Clasificatoria (playoff): 2° del Grupo A vs 2° del Grupo C
+      // - Semifinal 2: 1° del Grupo B vs Ganador Clasificatoria
+      // - Final: Ganadores de semifinales
+      
+      // Identificar los grupos A, B y C
+      const grupoA = grupos.find(g => g.nombre.includes('A'));
+      const grupoB = grupos.find(g => g.nombre.includes('B'));
+      const grupoC = grupos.find(g => g.nombre.includes('C'));
+      
+      if (!grupoA || !grupoB || !grupoC) {
+        console.error("Error: No se encontraron los grupos A, B y C");
+        return res.status(500).json({ error: "Error al identificar los grupos" });
+      }
+      
+      console.log("Grupos identificados:");
+      console.log("Grupo A:", grupoA.nombre);
+      console.log("Grupo B:", grupoB.nombre);
+      console.log("Grupo C:", grupoC.nombre);
+      
+      // Obtener los dos mejores jugadores de cada grupo
+      const mejoresA = ordenarJugadoresPorPuntos(grupoA.jugadores).slice(0, 2);
+      const mejoresB = ordenarJugadoresPorPuntos(grupoB.jugadores).slice(0, 2);
+      const mejoresC = ordenarJugadoresPorPuntos(grupoC.jugadores).slice(0, 2);
+      
+      console.log("Mejores del grupo A:", mejoresA.map(j => j.nombre));
+      console.log("Mejores del grupo B:", mejoresB.map(j => j.nombre));
+      console.log("Mejores del grupo C:", mejoresC.map(j => j.nombre));
+      
+      // Crear la estructura con clasificatoria
       eliminatorias = {
         semifinal1: {
-          jugador1: clasificados[0]?.jugador || null, 
-          jugador2: clasificados[3]?.jugador || null,
+          jugador1: mejoresA[0] || null, // 1° Grupo A
+          jugador2: mejoresB[1] || null, // 2° Grupo B
+          resultado: null
+        },
+        clasificatoria: {
+          jugador1: mejoresA[1] || null, // 2° Grupo A
+          jugador2: mejoresC[1] || null, // 2° Grupo C
           resultado: null
         },
         semifinal2: {
-          jugador1: clasificados[1]?.jugador || null,
-          jugador2: clasificados[2]?.jugador || null,
+          jugador1: mejoresB[0] || null, // 1° Grupo B
+          jugador2: null, // Se llenará con el ganador de la clasificatoria
           resultado: null
         },
         final: {
           jugador1: null, // Ganador semifinal1
           jugador2: null, // Ganador semifinal2
           resultado: null
-        }
+        },
+        _id: "ElIMinAtOriasNuevas" // ID especial para identificar la estructura correcta
       };
-    } else if (clasificados.length <= 8) {
-      // Con 5-8 clasificados, cuartos, semifinales y final
+      
+      console.log("Estructura con clasificatoria creada para torneo de 3 grupos");
+    } 
+    // PASO 2: CASO PARA 1 GRUPO
+    else if (grupos.length === 1) {
+      // Con 1 grupo, los 4 mejores van a semifinales
+      const mejoresJugadores = ordenarJugadoresPorPuntos(grupos[0].jugadores).slice(0, 4);
+      
       eliminatorias = {
-        cuartos1: {
-          jugador1: clasificados[0]?.jugador || null, 
-          jugador2: clasificados[7]?.jugador || null,
-          resultado: null
-        },
-        cuartos2: {
-          jugador1: clasificados[3]?.jugador || null,
-          jugador2: clasificados[4]?.jugador || null,
-          resultado: null
-        },
-        cuartos3: {
-          jugador1: clasificados[2]?.jugador || null,
-          jugador2: clasificados[5]?.jugador || null,
-          resultado: null
-        },
-        cuartos4: {
-          jugador1: clasificados[1]?.jugador || null,
-          jugador2: clasificados[6]?.jugador || null,
-          resultado: null
-        },
         semifinal1: {
-          jugador1: null, // Ganador cuartos1
-          jugador2: null, // Ganador cuartos2
+          jugador1: mejoresJugadores[0] || null,
+          jugador2: mejoresJugadores[3] || null,
           resultado: null
         },
         semifinal2: {
-          jugador1: null, // Ganador cuartos3
-          jugador2: null, // Ganador cuartos4
+          jugador1: mejoresJugadores[1] || null,
+          jugador2: mejoresJugadores[2] || null,
           resultado: null
         },
         final: {
-          jugador1: null, // Ganador semifinal1
-          jugador2: null, // Ganador semifinal2
+          jugador1: null,
+          jugador2: null,
           resultado: null
         }
       };
       
-      // Eliminar partidos con jugadores insuficientes
-      if (clasificados.length < 8) {
-        if (!clasificados[7]?.jugador) eliminatorias.cuartos1.jugador2 = clasificados[clasificados.length - 1]?.jugador || null;
-        if (clasificados.length <= 6) eliminatorias.cuartos4.jugador2 = null;
-        if (clasificados.length <= 5) eliminatorias.cuartos3.jugador2 = null;
-      }
-    } else {
-      // Con más de 8 clasificados, implementar octavos, cuartos, semis y final
+      console.log("Estructura creada para torneo de 1 grupo");
+    }
+    // PASO 3: CASO PARA 2 GRUPOS
+    else if (grupos.length === 2) {
+      // Con 2 grupos, los 2 mejores de cada grupo van a semifinales
+      const mejoresGrupo1 = ordenarJugadoresPorPuntos(grupos[0].jugadores).slice(0, 2);
+      const mejoresGrupo2 = ordenarJugadoresPorPuntos(grupos[1].jugadores).slice(0, 2);
+      
       eliminatorias = {
+        semifinal1: {
+          jugador1: mejoresGrupo1[0] || null, // 1° del grupo 1
+          jugador2: mejoresGrupo2[1] || null, // 2° del grupo 2
+          resultado: null
+        },
+        semifinal2: {
+          jugador1: mejoresGrupo2[0] || null, // 1° del grupo 2
+          jugador2: mejoresGrupo1[1] || null, // 2° del grupo 1
+          resultado: null
+        },
+        final: {
+          jugador1: null,
+          jugador2: null,
+          resultado: null
+        }
+      };
+      
+      console.log("Estructura creada para torneo de 2 grupos");
+    }
+    // PASO 4: CASO PARA 4 O MÁS GRUPOS - USAR CUARTOS DE FINAL
+    else {
+      // Con 4 o más grupos, usamos una estructura con cuartos de final
+      // Primero obtenemos los 2 mejores de cada grupo
+      let clasificados = [];
+      grupos.forEach(grupo => {
+        const mejoresDelGrupo = ordenarJugadoresPorPuntos(grupo.jugadores).slice(0, 2);
+        clasificados.push({
+          primero: mejoresDelGrupo[0] || null,
+          segundo: mejoresDelGrupo[1] || null,
+          grupo: grupo.nombre
+        });
+      });
+      
+      // Aplanamos la lista de clasificados para los emparejamientos
+      const jugadoresClasificados = clasificados.flatMap(c => [c.primero, c.segundo]).filter(j => j !== null);
+      
+      // Si tenemos 8 o más clasificados, usamos cuartos de final
+      if (jugadoresClasificados.length >= 8) {
+        eliminatorias = {
+          cuartos1: {
+            jugador1: jugadoresClasificados[0] || null,
+            jugador2: jugadoresClasificados[7] || null,
+            resultado: null
+          },
+          cuartos2: {
+            jugador1: jugadoresClasificados[3] || null,
+            jugador2: jugadoresClasificados[4] || null,
+            resultado: null
+          },
+          cuartos3: {
+            jugador1: jugadoresClasificados[2] || null,
+            jugador2: jugadoresClasificados[5] || null,
+            resultado: null
+          },
+          cuartos4: {
+            jugador1: jugadoresClasificados[1] || null,
+            jugador2: jugadoresClasificados[6] || null,
+            resultado: null
+          },
+          semifinal1: {
+            jugador1: null,
+            jugador2: null,
+            resultado: null
+          },
+          semifinal2: {
+            jugador1: null,
+            jugador2: null,
+            resultado: null
+          },
+          final: {
+            jugador1: null,
+            jugador2: null,
+            resultado: null
+          }
+        };
+      } else {
+        // Si no tenemos suficientes para cuartos, usar semifinales directamente
+        eliminatorias = {
+          semifinal1: {
+            jugador1: jugadoresClasificados[0] || null,
+            jugador2: jugadoresClasificados[3] || null,
+            resultado: null
+          },
+          semifinal2: {
+            jugador1: jugadoresClasificados[1] || null,
+            jugador2: jugadoresClasificados[2] || null,
+            resultado: null
+          },
+          final: {
+            jugador1: null,
+            jugador2: null,
+            resultado: null
+          }
+        };
+      }
+      
+      console.log(`Estructura creada para torneo de ${grupos.length} grupos`);
+    }
+    
+    // Limpiar eliminatorias anteriores y guardar las nuevas
+    eliminatoriasDB.remove({}, { multi: true }, () => {
+      eliminatoriasDB.insert(eliminatorias, (err, doc) => {
+        if (err) {
+          res.status(500).json({ error: err });
+          return;
+        }
+        res.status(200).json({ message: "Eliminatorias generadas correctamente", eliminatorias: doc });
+      });
+    });
         octavos1: {
           jugador1: clasificados[0]?.jugador || null,
           jugador2: clasificados[15]?.jugador || null,
@@ -587,7 +804,10 @@ app.post('/api/eliminatorias/generar', (req, res) => {
           res.status(500).json({ error: err });
           return;
         }
-        res.json(nuevasEliminatorias);
+        res.status(200).json({ 
+          message: "Eliminatorias generadas correctamente", 
+          eliminatorias: nuevasEliminatorias 
+        });
       });
     });
   });
@@ -613,9 +833,36 @@ app.put('/api/eliminatorias/:fase', (req, res) => {
     
     // Si es clasificatoria o semifinal, actualizar siguiente fase
     if (fase === 'clasificatoria') {
-      const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
-        eliminatorias.clasificatoria.jugador1 : eliminatorias.clasificatoria.jugador2;
-      eliminatorias.semifinal2.jugador2 = ganador;
+      // Manejar tanto el caso de estructura con clasificatoria definida como el de cuartos
+      if (eliminatorias.clasificatoria && eliminatorias.clasificatoria.jugador1 && eliminatorias.clasificatoria.jugador2) {
+        // Estructura normal con jugadores definidos en clasificatoria
+        const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
+          eliminatorias.clasificatoria.jugador1 : eliminatorias.clasificatoria.jugador2;
+        eliminatorias.semifinal2.jugador2 = ganador;
+      } else if (resultado.jugador1Nombre && resultado.jugador2Nombre) {
+        // Si no hay jugadores en clasificatoria pero tenemos los nombres (caso de estructura con cuartos)
+        // Buscar los jugadores correspondientes en los cuartos
+        const nombreGanador = resultado.golesJugador1 > resultado.golesJugador2 ? resultado.jugador1Nombre : resultado.jugador2Nombre;
+        let jugadorGanador = null;
+        
+        // Buscar el jugador ganador en todos los partidos de cuartos
+        ['cuartos1', 'cuartos2', 'cuartos3', 'cuartos4'].forEach(cuarto => {
+          if (eliminatorias[cuarto]) {
+            if (eliminatorias[cuarto].jugador1 && eliminatorias[cuarto].jugador1.nombre === nombreGanador) {
+              jugadorGanador = eliminatorias[cuarto].jugador1;
+            } else if (eliminatorias[cuarto].jugador2 && eliminatorias[cuarto].jugador2.nombre === nombreGanador) {
+              jugadorGanador = eliminatorias[cuarto].jugador2;
+            }
+          }
+        });
+        
+        if (jugadorGanador) {
+          eliminatorias.semifinal2.jugador2 = jugadorGanador;
+          // Si no existe la clasificatoria, la creamos
+          if (!eliminatorias.clasificatoria) eliminatorias.clasificatoria = {};
+          eliminatorias.clasificatoria.resultado = resultado;
+        }
+      }
     } else if (fase === 'semifinal1') {
       const ganador = resultado.golesJugador1 > resultado.golesJugador2 ? 
         eliminatorias.semifinal1.jugador1 : eliminatorias.semifinal1.jugador2;
@@ -1372,6 +1619,18 @@ app.post('/api/torneo/simular', async (req, res) => {
     // Obtener clasificados de cada grupo
     const clasificados = [];
     
+    serverLog("Generando clasificados para eliminatorias...");
+    
+    // Verificar si tenemos específicamente 3 grupos
+    const nombresGrupos = gruposCreados.map(g => g.nombre);
+    serverLog("Grupos detectados: " + nombresGrupos.join(', '));
+    const tieneGrupoA = nombresGrupos.includes('Grupo A');
+    const tieneGrupoB = nombresGrupos.includes('Grupo B');
+    const tieneGrupoC = nombresGrupos.includes('Grupo C');
+    const tieneTresGruposABC = tieneGrupoA && tieneGrupoB && tieneGrupoC && gruposCreados.length === 3;
+    
+    serverLog("¿Tiene estructura de 3 grupos (A, B, C)? " + (tieneTresGruposABC ? "SÍ" : "NO"));
+    
     for (const grupo of gruposCreados) {
       const jugadoresOrdenados = ordenarJugadoresPorPuntos(grupo.jugadores);
       
@@ -1396,6 +1655,37 @@ app.post('/api/torneo/simular', async (req, res) => {
     // 7. Simular eliminatorias
     let eliminatorias = crearEstructuraEliminatorias(clasificados);
     
+    // Verificar si la estructura es correcta (debe tener clasificatoria para 3 grupos)
+    const estructuraCorrecta = tieneTresGruposABC ? eliminatorias.hasOwnProperty('clasificatoria') : true;
+    
+    if (!estructuraCorrecta) {
+      serverLog("ERROR: Se detectaron 3 grupos pero no se creó la estructura con clasificatoria. Rehaciendo...");
+      
+      // Forzar la creación de la estructura correcta
+      eliminatorias = {
+        semifinal1: {
+          jugador1: null, 
+          jugador2: null,
+          resultado: null
+        },
+        clasificatoria: {
+          jugador1: null,
+          jugador2: null,
+          resultado: null
+        },
+        semifinal2: {
+          jugador1: null,
+          jugador2: null, 
+          resultado: null
+        },
+        final: {
+          jugador1: null,
+          jugador2: null,
+          resultado: null
+        }
+      };
+    }
+    
     // Guardar estructura de eliminatorias
     await new Promise((resolve, reject) => {
       eliminatoriasDB.insert(eliminatorias, (err) => {
@@ -1407,12 +1697,17 @@ app.post('/api/torneo/simular', async (req, res) => {
     // 8. Simular partidos de eliminatorias
     const ganador = await simularPartidosEliminatorias(eliminatorias);
     
-    resultadoSimulacion.ganador = {
-      nombre: ganador.nombre,
-      equipo: ganador.equipo
-    };
-    
-    resultadoSimulacion.mensaje = `¡Torneo simulado con éxito! ${ganador.nombre} es el campeón.`;
+    if (!ganador) {
+      console.log("Advertencia: No se pudo determinar un ganador en las eliminatorias");
+      resultadoSimulacion.mensaje = "El torneo ha sido simulado, pero no se pudo determinar un campeón.";
+    } else {
+      resultadoSimulacion.ganador = {
+        nombre: ganador.nombre,
+        equipo: ganador.equipo
+      };
+      
+      resultadoSimulacion.mensaje = `¡Torneo simulado con éxito! ${ganador.nombre} es el campeón.`;
+    }
     
     res.json(resultadoSimulacion);
     
@@ -1446,16 +1741,36 @@ async function generarGruposAleatorios(jugadores) {
       { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(mitad), partidos: [] }
     ];
   } else if (totalJugadores <= 12) {
-    // 9-12 jugadores: tres grupos
-    const tamañoGrupoA = Math.ceil(totalJugadores / 3);
-    const tamañoGrupoB = Math.ceil((totalJugadores - tamañoGrupoA) / 2);
-    const tamañoGrupoC = totalJugadores - tamañoGrupoA - tamañoGrupoB;
-    
-    gruposNuevos = [
-      { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, tamañoGrupoA), partidos: [] },
-      { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(tamañoGrupoA, tamañoGrupoA + tamañoGrupoB), partidos: [] },
-      { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(tamañoGrupoA + tamañoGrupoB), partidos: [] }
-    ];
+    // 9-12 jugadores: crear grupos equilibrados
+    if (totalJugadores === 9) {
+      // 9 jugadores: 3 grupos de 3 (perfecto)
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 3), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(3, 6), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(6, 9), partidos: [] }
+      ];
+    } else if (totalJugadores === 10) {
+      // 10 jugadores: 2 grupos de 3 y 1 grupo de 4
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 3), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(3, 6), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(6, 10), partidos: [] }
+      ];
+    } else if (totalJugadores === 11) {
+      // 11 jugadores: 2 grupos de 4 y 1 grupo de 3
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 4), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(4, 8), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(8, 11), partidos: [] }
+      ];
+    } else {
+      // 12 jugadores: 3 grupos de 4 (perfecto)
+      gruposNuevos = [
+        { nombre: 'Grupo A', jugadores: jugadoresAleatorios.slice(0, 4), partidos: [] },
+        { nombre: 'Grupo B', jugadores: jugadoresAleatorios.slice(4, 8), partidos: [] },
+        { nombre: 'Grupo C', jugadores: jugadoresAleatorios.slice(8, 12), partidos: [] }
+      ];
+    }
   } else {
     // 13+ jugadores: cuatro grupos
     const tamañoPromedio = Math.ceil(totalJugadores / 4);
@@ -1481,6 +1796,46 @@ async function generarGruposAleatorios(jugadores) {
 // Función para crear la estructura de eliminatorias según los clasificados
 function crearEstructuraEliminatorias(clasificados) {
   let eliminatorias = {};
+  
+  // Determinar el número de grupos basado en los clasificados
+  const gruposUnicos = [...new Set(clasificados.map(c => c.grupo))];
+  const numGrupos = gruposUnicos.length;
+  console.log(`Grupos detectados: ${numGrupos} (${gruposUnicos.join(', ')})`);
+  console.log(`Total clasificados: ${clasificados.length}`);
+  
+  // Verificar explícitamente si tenemos grupos A, B y C
+  const tieneGrupoA = clasificados.some(c => c.grupo === 'Grupo A');
+  const tieneGrupoB = clasificados.some(c => c.grupo === 'Grupo B');
+  const tieneGrupoC = clasificados.some(c => c.grupo === 'Grupo C');
+  const tieneTresGruposABC = tieneGrupoA && tieneGrupoB && tieneGrupoC;
+  
+  console.log(`Estructura de 3 grupos (A, B, C): ${tieneTresGruposABC ? 'SÍ' : 'NO'}`);
+  
+  // Log detallado para depuración
+  console.log("Detalle de clasificados:", JSON.stringify(clasificados.map(c => ({
+    nombre: c.jugador.nombre,
+    grupo: c.grupo,
+    posicion: c.posicion
+  }))), null, 2);
+  
+  // Organizar clasificados por grupo y posición
+  const clasificadosPorGrupo = {};
+  for (const clasificado of clasificados) {
+    if (!clasificadosPorGrupo[clasificado.grupo]) {
+      clasificadosPorGrupo[clasificado.grupo] = [];
+    }
+    clasificadosPorGrupo[clasificado.grupo].push(clasificado);
+  }
+  
+  // Ordenar cada grupo por posición
+  for (const grupo in clasificadosPorGrupo) {
+    clasificadosPorGrupo[grupo].sort((a, b) => a.posicion - b.posicion);
+  }
+  
+  console.log("Clasificados organizados por grupo:", 
+    Object.keys(clasificadosPorGrupo).map(g => 
+      `${g}: ${clasificadosPorGrupo[g].map(c => `${c.jugador.nombre} (${c.posicion}°)`).join(', ')}`
+    ).join(' | '));
   
   if (clasificados.length <= 2) {
     // Con 1 o 2 clasificados, directo a la final
@@ -1510,18 +1865,144 @@ function crearEstructuraEliminatorias(clasificados) {
         resultado: null
       }
     };
-  } else {
-    // Implementación para más clasificados (cuartos, etc.)
-    // Código simplificado para el ejemplo
+  } else if (numGrupos === 3 || tieneTresGruposABC) {
+    // Estructura específica para 3 grupos (semifinales con clasificatoria)
+    console.log("Usando estructura especial para 3 grupos");
+    
+    // Obtener los primeros y segundos lugares de cada grupo
+    const primerosLugares = [];
+    const segundosLugares = [];
+    
+    for (const grupo in clasificadosPorGrupo) {
+      if (clasificadosPorGrupo[grupo].length > 0) {
+        primerosLugares.push(clasificadosPorGrupo[grupo][0]); // 1° lugar
+        console.log(`Primer lugar de ${grupo}: ${clasificadosPorGrupo[grupo][0].jugador.nombre}`);
+      }
+      
+      if (clasificadosPorGrupo[grupo].length > 1) {
+        segundosLugares.push(clasificadosPorGrupo[grupo][1]); // 2° lugar
+        console.log(`Segundo lugar de ${grupo}: ${clasificadosPorGrupo[grupo][1].jugador.nombre}`);
+      }
+    }
+    
+    // Ordenar por nombre de grupo (A, B, C)
+    primerosLugares.sort((a, b) => a.grupo.localeCompare(b.grupo));
+    segundosLugares.sort((a, b) => a.grupo.localeCompare(b.grupo));
+    
+    console.log("Primeros lugares:", primerosLugares.map(p => `${p.jugador.nombre} (${p.grupo})`).join(', '));
+    console.log("Segundos lugares:", segundosLugares.map(p => `${p.jugador.nombre} (${p.grupo})`).join(', '));
+    
+    // Estructura para 3 grupos:
+    // Semifinal 1: 1° Grupo A vs 1° Grupo C
+    // Clasificatoria: 2° Grupo A vs 2° Grupo C
+    // Semifinal 2: 1° Grupo B vs Ganador Clasificatoria
+    // Final: Ganador SF1 vs Ganador SF2
+    // Primero 1° del grupo A, 1° del grupo B y 1° del grupo C
+    const primeroA = primerosLugares.find(p => p.grupo === 'Grupo A')?.jugador || null;
+    const primeroB = primerosLugares.find(p => p.grupo === 'Grupo B')?.jugador || null;
+    const primeroC = primerosLugares.find(p => p.grupo === 'Grupo C')?.jugador || null;
+    
+    // Después 2° del grupo A, 2° del grupo B y 2° del grupo C
+    const segundoA = segundosLugares.find(p => p.grupo === 'Grupo A')?.jugador || null;
+    const segundoB = segundosLugares.find(p => p.grupo === 'Grupo B')?.jugador || null;
+    const segundoC = segundosLugares.find(p => p.grupo === 'Grupo C')?.jugador || null;
+    
+    console.log(`Primer A: ${primeroA?.nombre || 'null'}`);
+    console.log(`Primer B: ${primeroB?.nombre || 'null'}`);
+    console.log(`Primer C: ${primeroC?.nombre || 'null'}`);
+    console.log(`Segundo A: ${segundoA?.nombre || 'null'}`);
+    console.log(`Segundo B: ${segundoB?.nombre || 'null'}`);
+    console.log(`Segundo C: ${segundoC?.nombre || 'null'}`);
+    
     eliminatorias = {
-      cuartos1: { jugador1: clasificados[0]?.jugador, jugador2: clasificados[7]?.jugador, resultado: null },
-      cuartos2: { jugador1: clasificados[3]?.jugador, jugador2: clasificados[4]?.jugador, resultado: null },
-      cuartos3: { jugador1: clasificados[2]?.jugador, jugador2: clasificados[5]?.jugador, resultado: null },
-      cuartos4: { jugador1: clasificados[1]?.jugador, jugador2: clasificados[6]?.jugador, resultado: null },
-      semifinal1: { jugador1: null, jugador2: null, resultado: null },
-      semifinal2: { jugador1: null, jugador2: null, resultado: null },
-      final: { jugador1: null, jugador2: null, resultado: null }
+      semifinal1: {
+        jugador1: primeroA, // 1° Grupo A
+        jugador2: primeroC, // 1° Grupo C
+        resultado: null
+      },
+      clasificatoria: {
+        jugador1: segundoA, // 2° Grupo A
+        jugador2: segundoC, // 2° Grupo C
+        resultado: null
+      },
+      semifinal2: {
+        jugador1: primeroB, // 1° Grupo B
+        jugador2: null, // Se llenará con el ganador de la clasificatoria
+        resultado: null
+      },
+      final: {
+        jugador1: null, // Ganador semifinal1
+        jugador2: null, // Ganador semifinal2
+        resultado: null
+      }
     };
+  } else {
+    // Verificamos si tenemos exactamente 3 grupos: A, B y C
+  const gruposDisponibles = new Set(clasificados.map(c => c.grupo));
+  const tieneGrupoA = gruposDisponibles.has('Grupo A');
+  const tieneGrupoB = gruposDisponibles.has('Grupo B');
+  const tieneGrupoC = gruposDisponibles.has('Grupo C');
+  const tieneTresGrupos = tieneGrupoA && tieneGrupoB && tieneGrupoC && gruposDisponibles.size === 3;
+  
+  console.log("Grupos disponibles:", Array.from(gruposDisponibles));
+  console.log("¿Tiene los 3 grupos exactos A, B y C?", tieneTresGrupos);
+    
+  if (tieneTresGrupos) {
+      console.log("Detectados explícitamente Grupos A, B y C - usando estructura para 3 grupos");
+      
+      // Obtener jugadores específicos de cada grupo
+      const jugadoresA = clasificados.filter(c => c.grupo === 'Grupo A');
+      const jugadoresB = clasificados.filter(c => c.grupo === 'Grupo B');
+      const jugadoresC = clasificados.filter(c => c.grupo === 'Grupo C');
+      
+      console.log("Jugadores Grupo A:", jugadoresA.map(j => `${j.jugador.nombre} (${j.posicion}°)`).join(', '));
+      console.log("Jugadores Grupo B:", jugadoresB.map(j => `${j.jugador.nombre} (${j.posicion}°)`).join(', '));
+      console.log("Jugadores Grupo C:", jugadoresC.map(j => `${j.jugador.nombre} (${j.posicion}°)`).join(', '));
+      
+      // Estructura específica para 3 grupos (igual que la sección anterior)
+      const primeroA = jugadoresA.find(p => p.posicion === 1)?.jugador || null;
+      const primeroB = jugadoresB.find(p => p.posicion === 1)?.jugador || null;
+      const primeroC = jugadoresC.find(p => p.posicion === 1)?.jugador || null;
+      
+      const segundoA = jugadoresA.find(p => p.posicion === 2)?.jugador || null;
+      const segundoB = jugadoresB.find(p => p.posicion === 2)?.jugador || null;
+      const segundoC = jugadoresC.find(p => p.posicion === 2)?.jugador || null;
+      
+      eliminatorias = {
+        semifinal1: {
+          jugador1: primeroA,
+          jugador2: primeroC,
+          resultado: null
+        },
+        clasificatoria: {
+          jugador1: segundoA,
+          jugador2: segundoC, 
+          resultado: null
+        },
+        semifinal2: {
+          jugador1: primeroB,
+          jugador2: null, // Se llenará con el ganador de la clasificatoria
+          resultado: null
+        },
+        final: {
+          jugador1: null,
+          jugador2: null,
+          resultado: null
+        }
+      };
+    } else {
+      // Estructura para 4 o más grupos con cuartos de final
+      console.log("Usando estructura de cuartos de final para torneos grandes");
+      eliminatorias = {
+        cuartos1: { jugador1: clasificados[0]?.jugador, jugador2: clasificados[7]?.jugador, resultado: null },
+        cuartos2: { jugador1: clasificados[3]?.jugador, jugador2: clasificados[4]?.jugador, resultado: null },
+        cuartos3: { jugador1: clasificados[2]?.jugador, jugador2: clasificados[5]?.jugador, resultado: null },
+        cuartos4: { jugador1: clasificados[1]?.jugador, jugador2: clasificados[6]?.jugador, resultado: null },
+        semifinal1: { jugador1: null, jugador2: null, resultado: null },
+        semifinal2: { jugador1: null, jugador2: null, resultado: null },
+        final: { jugador1: null, jugador2: null, resultado: null }
+      };
+    }
   }
   
   return eliminatorias;
@@ -1529,8 +2010,44 @@ function crearEstructuraEliminatorias(clasificados) {
 
 // Función para simular partidos de eliminatorias
 async function simularPartidosEliminatorias(eliminatorias) {
+  // Inicializar variable ganador
+  let ganador = null;
+  
+  // Verificar que la final exista
+  if (!eliminatorias.final) {
+    eliminatorias.final = {};
+  }
+  
+  // Simular clasificatoria si existe
+  if (eliminatorias.clasificatoria && eliminatorias.clasificatoria.jugador1 && eliminatorias.clasificatoria.jugador2) {
+    console.log("Simulando partido de clasificatoria");
+    const golesJ1 = Math.floor(Math.random() * 5);
+    const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
+    eliminatorias.clasificatoria.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
+    
+    // El ganador de la clasificatoria va a semifinal 2
+    if (eliminatorias.semifinal2) {
+      const ganador = golesJ1 > golesJ2 
+        ? eliminatorias.clasificatoria.jugador1 
+        : eliminatorias.clasificatoria.jugador2;
+        
+      // Asignar el ganador manteniendo su información de grupo y posición
+      eliminatorias.semifinal2.jugador2 = ganador;
+        
+      if (eliminatorias.semifinal2.jugador2) {
+        console.log("Ganador clasificatoria asignado a semifinal2.jugador2:", 
+          eliminatorias.semifinal2.jugador2.nombre,
+          "grupo:", eliminatorias.semifinal2.jugador2.grupo,
+          "posición:", eliminatorias.semifinal2.jugador2.posicion);
+      } else {
+        console.log("Advertencia: El jugador ganador de la clasificatoria es null");
+      }
+    }
+  }
+  
   // Simular cuartos si existen
   if (eliminatorias.cuartos1) {
+    console.log("Simulando partidos de cuartos");
     // Simular cuartos1
     if (eliminatorias.cuartos1.jugador1 && eliminatorias.cuartos1.jugador2) {
       const golesJ1 = Math.floor(Math.random() * 5);
@@ -1563,38 +2080,67 @@ async function simularPartidosEliminatorias(eliminatorias) {
       eliminatorias.semifinal2.jugador2 = golesJ1 > golesJ2 ? eliminatorias.cuartos4.jugador1 : eliminatorias.cuartos4.jugador2;
     }
   }
-  
+
   // Simular semifinales
   if (eliminatorias.semifinal1) {
+    console.log("Procesando semifinales");
+    
     // Semifinal 1
     if (eliminatorias.semifinal1.jugador1 && eliminatorias.semifinal1.jugador2) {
+      console.log("Simulando semifinal 1");
       const golesJ1 = Math.floor(Math.random() * 5);
       const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
       eliminatorias.semifinal1.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
       eliminatorias.final.jugador1 = golesJ1 > golesJ2 ? eliminatorias.semifinal1.jugador1 : eliminatorias.semifinal1.jugador2;
+      if (eliminatorias.final.jugador1) {
+        console.log("Ganador semifinal1:", eliminatorias.final.jugador1.nombre);
+      } else {
+        console.log("Advertencia: El jugador ganador de la semifinal1 es null");
+      }
     }
     
     // Semifinal 2
     if (eliminatorias.semifinal2?.jugador1 && eliminatorias.semifinal2?.jugador2) {
+      console.log("Simulando semifinal 2");
       const golesJ1 = Math.floor(Math.random() * 5);
       const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
       eliminatorias.semifinal2.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
       eliminatorias.final.jugador2 = golesJ1 > golesJ2 ? eliminatorias.semifinal2.jugador1 : eliminatorias.semifinal2.jugador2;
+      if (eliminatorias.final.jugador2) {
+        console.log("Ganador semifinal2:", eliminatorias.final.jugador2.nombre);
+      } else {
+        console.log("Advertencia: El jugador ganador de la semifinal2 es null");
+      }
     }
   }
   
   // Simular final
-  let ganador = null;
-  
-  if (eliminatorias.final.jugador1 && eliminatorias.final.jugador2) {
+  if (eliminatorias.final?.jugador1 && eliminatorias.final?.jugador2) {
+    console.log("Simulando final");
     const golesJ1 = Math.floor(Math.random() * 5);
+    // Aseguramos que no haya empate en la final
     const golesJ2 = golesJ1 === Math.floor(Math.random() * 5) ? golesJ1 + 1 : Math.floor(Math.random() * 5);
     eliminatorias.final.resultado = { golesJugador1: golesJ1, golesJugador2: golesJ2 };
     ganador = golesJ1 > golesJ2 ? eliminatorias.final.jugador1 : eliminatorias.final.jugador2;
-  } else if (eliminatorias.final.jugador1) {
+    if (ganador) {
+      console.log("Campeón del torneo:", ganador.nombre);
+    } else {
+      console.log("Advertencia: No se pudo determinar un campeón");
+    }
+  } else if (eliminatorias.final?.jugador1) {
     ganador = eliminatorias.final.jugador1;
-  } else if (eliminatorias.final.jugador2) {
+    if (ganador) {
+      console.log("Campeón por defecto (único finalista):", ganador.nombre);
+    } else {
+      console.log("Advertencia: El único finalista (jugador1) es null");
+    }
+  } else if (eliminatorias.final?.jugador2) {
     ganador = eliminatorias.final.jugador2;
+    if (ganador) {
+      console.log("Campeón por defecto (único finalista):", ganador.nombre);
+    } else {
+      console.log("Advertencia: El único finalista (jugador2) es null");
+    }
   }
   
   // Actualizar eliminatorias en la base de datos

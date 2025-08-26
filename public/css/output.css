@@ -1138,6 +1138,16 @@ main {
 
 /* Estilo para las filas de la tabla que son clasificados */
 
+.clasificado {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+  --tw-gradient-from: rgb(20 83 45 / 0.6) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(20 83 45 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+  --tw-gradient-to: rgb(22 101 52 / 0.6) var(--tw-gradient-to-position);
+  --tw-text-opacity: 1;
+  color: rgb(0 255 170 / var(--tw-text-opacity, 1));
+}
+
 /* Estilos específicos para modales */
 
 /* Estilos para botones de registro rápido */

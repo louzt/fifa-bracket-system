@@ -1,0 +1,793 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+---
+
+<Layout title="Configuración Avanzada de Grupos" description="Configura los grupos del torneo de manera personalizada">
+  <div class="space-y-8">
+    <SectionHeader
+      title="⚙️ Configuración Avanzada de Grupos"
+      subtitle="Define la estructura exacta de los grupos antes de generar el torneo"
+    />
+
+    <!-- Panel de migración -->
+    <div class="bg-yellow-600/20 border border-yellow-600/50 rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-yellow-400 font-semibold mb-1">🔄 Migración a Base de Datos</h3>
+          <p class="text-gray-300 text-sm">Configuraciones ahora se guardan en la base de datos</p>
+        </div>
+        <div class="flex space-x-2">
+          <button
+            id="btn-verificar-config"
+            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+          >
+            Verificar Datos
+          </button>
+          <button
+            id="btn-migrar-config"
+            class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm transition-colors"
+          >
+            Migrar Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de configuración principal -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <!-- Configuración de grupos -->
+      <div class="xl:col-span-2 space-y-6">
+        <!-- Información de jugadores -->
+        <div class="card">
+          <h3 class="text-xl font-bold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">👥</span>
+            Jugadores Disponibles
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="stat-card text-center">
+              <div class="stat-number" id="total-jugadores">0</div>
+              <p class="text-gray-400 mt-2">Total Jugadores</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-green-400" id="con-equipo">0</div>
+              <p class="text-gray-400 mt-2">Con Equipo</p>
+            </div>
+            <div class="stat-card text-center">
+              <div class="stat-number text-yellow-400" id="sin-equipo">0</div>
+              <p class="text-gray-400 mt-2">Sin Equipo</p>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-center">
+            <a href="/jugadores" class="btn btn-secondary">
+              Gestionar Jugadores
+            </a>
+          </div>
+        </div>
+
+        <!-- Configuración de estructura de grupos -->
+        <div class="card">
+          <h3 class="text-xl font-bold mb-6 flex items-center">
+            <span class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">⚙️</span>
+            Estructura de Grupos
+          </h3>
+
+          <!-- Modo de configuración -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-300 mb-3">Modo de Configuración</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label class="group-config cursor-pointer" id="modo-automatico">
+                <input type="radio" name="modo" value="automatico" checked class="sr-only">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 border-2 border-gray-400 rounded-full group-checked:border-blue-500 group-checked:bg-blue-500"></div>
+                  <div>
+                    <h4 class="font-semibold">Automático</h4>
+                    <p class="text-sm text-gray-400">El sistema decide la mejor distribución</p>
+                  </div>
+                </div>
+              </label>
+              <label class="group-config cursor-pointer" id="modo-manual">
+                <input type="radio" name="modo" value="manual" class="sr-only">
+                <div class="flex items-center space-x-3">
+                  <div class="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
+                  <div>
+                    <h4 class="font-semibold">Manual</h4>
+                    <p class="text-sm text-gray-400">Define exactamente cada grupo</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Configuración automática -->
+          <div id="config-automatico" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Tamaño preferido de grupo</label>
+                <select id="tamano-preferido" class="input w-full">
+                  <option value="4">4 jugadores por grupo</option>
+                  <option value="5">5 jugadores por grupo</option>
+                  <option value="6">6 jugadores por grupo</option>
+                  <option value="3">3 jugadores por grupo</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Clasificados por grupo</label>
+                <select id="clasificados-auto" class="input w-full">
+                  <option value="1">1 clasificado por grupo</option>
+                  <option value="2">2 clasificados por grupo</option>
+                  <option value="3">3 clasificados por grupo</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuración manual -->
+          <div id="config-manual" class="space-y-4 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Número de grupos</label>
+                <input type="number" id="num-grupos" min="2" max="8" value="3" class="input w-full">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Total de clasificados</label>
+                <input type="number" id="total-clasificados" min="2" max="16" value="6" class="input w-full">
+              </div>
+            </div>
+
+            <!-- Configuración de cada grupo -->
+            <div id="grupos-config" class="space-y-4">
+              <!-- Se generará dinámicamente -->
+            </div>
+
+            <button id="actualizar-grupos" class="btn btn-secondary">
+              Actualizar Configuración
+            </button>
+          </div>
+
+          <!-- Opciones adicionales -->
+          <div class="mt-6 space-y-4">
+            <h4 class="font-semibold text-gray-200">Opciones del Torneo</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label class="flex items-center space-x-3">
+                <input type="checkbox" id="ida-vuelta" class="rounded border-gray-600 bg-gray-800 text-blue-600">
+                <span class="text-sm">Partidos ida y vuelta</span>
+              </label>
+              <label class="flex items-center space-x-3">
+                <input type="checkbox" id="sorteo-equipos" class="rounded border-gray-600 bg-gray-800 text-blue-600" checked>
+                <span class="text-sm">Sortear equipos antes de grupos</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="mt-8 flex flex-wrap gap-4">
+            <button id="generar-preview" class="btn btn-primary">
+              👁️ Vista Previa
+            </button>
+            <button id="generar-grupos" class="btn btn-success" disabled>
+              🚀 Generar Grupos
+            </button>
+            <button id="reset-config" class="btn btn-danger">
+              🔄 Resetear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista previa -->
+      <div class="space-y-6">
+        <!-- Resumen de configuración -->
+        <div class="card">
+          <h3 class="text-xl font-bold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">📋</span>
+            Resumen
+          </h3>
+          <div id="resumen-config" class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-400">Jugadores totales:</span>
+              <span id="resumen-jugadores">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Número de grupos:</span>
+              <span id="resumen-grupos">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Jugadores por grupo:</span>
+              <span id="resumen-por-grupo">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Total clasificados:</span>
+              <span id="resumen-clasificados">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Partidos por grupo:</span>
+              <span id="resumen-partidos">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-400">Total de partidos:</span>
+              <span id="resumen-total-partidos">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista previa de grupos -->
+        <div class="card">
+          <h3 class="text-xl font-bold mb-4 flex items-center">
+            <span class="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center mr-3">👁️</span>
+            Vista Previa
+          </h3>
+          <div id="preview-grupos" class="space-y-4">
+            <p class="text-gray-400 text-center">Configura los grupos para ver la vista previa</p>
+          </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="card">
+          <h4 class="font-semibold mb-3 text-orange-400">💡 Consejos</h4>
+          <ul class="text-sm text-gray-400 space-y-2">
+            <li>• Grupos de 4-5 jugadores son ideales para competitividad</li>
+            <li>• Clasifica 1-2 jugadores por grupo para eliminatorias</li>
+            <li>• Usa ida y vuelta para más partidos y precisión</li>
+            <li>• El sistema balanceará automáticamente los grupos</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación -->
+    <div id="modal-confirmacion" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-md w-full border border-gray-700">
+          <h3 class="text-xl font-bold mb-4 text-center">🚀 Generar Grupos</h3>
+          <div id="confirmacion-contenido" class="mb-6">
+            <!-- Contenido dinámico -->
+          </div>
+          <div class="flex space-x-4">
+            <button id="cancelar-generacion" class="btn btn-secondary flex-1">
+              Cancelar
+            </button>
+            <button id="confirmar-generacion" class="btn btn-success flex-1">
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import type { Jugador } from '../types/index';
+
+    interface ConfiguracionGrupo {
+      numeroGrupo: number;
+      jugadores: number;
+      clasificados: number;
+    }
+
+    interface ConfiguracionTorneo {
+      modo: 'automatico' | 'manual';
+      grupos: ConfiguracionGrupo[];
+      idaVuelta: boolean;
+      sortearEquipos: boolean;
+      totalJugadores: number;
+      totalClasificados: number;
+    }
+
+    class ConfiguradorGrupos {
+      private jugadores: Jugador[] = [];
+      private configuracion: ConfiguracionTorneo = {
+        modo: 'automatico',
+        grupos: [],
+        idaVuelta: false,
+        sortearEquipos: true,
+        totalJugadores: 0,
+        totalClasificados: 0
+      };
+
+      constructor() {
+        this.cargarJugadores();
+        this.inicializarEventos();
+        this.actualizarEstadisticas();
+      }
+
+      private async cargarJugadores(): Promise<void> {
+        try {
+          const response = await fetch('/api/configuraciones');
+          if (response.ok) {
+            const configuraciones = await response.json();
+            const configJugadores = configuraciones.find((c: any) => c.clave === 'jugadores');
+            if (configJugadores) {
+              this.jugadores = JSON.parse(configJugadores.valor);
+            } else {
+              this.jugadores = [];
+            }
+            this.configuracion.totalJugadores = this.jugadores.filter(j => j.equipo).length;
+          }
+        } catch (error) {
+          console.error('Error al cargar jugadores desde DB:', error);
+          // Intentar fallback a localStorage solo durante migración
+          try {
+            const jugadoresLocal = localStorage.getItem('jugadores');
+            if (jugadoresLocal) {
+              this.jugadores = JSON.parse(jugadoresLocal);
+              console.log('Cargados jugadores desde localStorage como fallback');
+            } else {
+              this.jugadores = [];
+            }
+            this.configuracion.totalJugadores = this.jugadores.filter(j => j.equipo).length;
+          } catch (fallbackError) {
+            console.error('Error en fallback localStorage:', fallbackError);
+            this.jugadores = [];
+            this.configuracion.totalJugadores = 0;
+          }
+        }
+        this.actualizarEstadisticas();
+        this.calcularConfiguracionAutomatica();
+      }
+
+      private async guardarConfiguracionEnDB(): Promise<void> {
+        try {
+          const response = await fetch('/api/configuraciones', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              clave: 'configuracion-torneo',
+              valor: JSON.stringify(this.configuracion),
+              tipo: 'configuracion'
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+          }
+
+          console.log('Configuración de torneo guardada en DB');
+        } catch (error) {
+          console.error('Error al guardar configuración en DB:', error);
+          // Fallback a localStorage durante migración
+          localStorage.setItem('configuracion-torneo', JSON.stringify(this.configuracion));
+          console.log('Guardado en localStorage como fallback');
+        }
+      }
+
+      private inicializarEventos(): void {
+        // Modo de configuración
+        document.querySelectorAll('input[name="modo"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            const target = e.target as HTMLInputElement;
+            this.configuracion.modo = target.value as 'automatico' | 'manual';
+            this.cambiarModo();
+          });
+        });
+
+        // Configuración automática
+        document.getElementById('tamano-preferido')?.addEventListener('change', () => {
+          this.calcularConfiguracionAutomatica();
+        });
+        
+        document.getElementById('clasificados-auto')?.addEventListener('change', () => {
+          this.calcularConfiguracionAutomatica();
+        });
+
+        // Configuración manual
+        document.getElementById('num-grupos')?.addEventListener('input', () => {
+          this.generarConfiguracionManual();
+        });
+
+        document.getElementById('total-clasificados')?.addEventListener('input', () => {
+          this.actualizarClasificados();
+        });
+
+        document.getElementById('actualizar-grupos')?.addEventListener('click', () => {
+          this.generarConfiguracionManual();
+        });
+
+        // Opciones adicionales
+        document.getElementById('ida-vuelta')?.addEventListener('change', (e) => {
+          this.configuracion.idaVuelta = (e.target as HTMLInputElement).checked;
+          this.actualizarResumen();
+        });
+
+        document.getElementById('sorteo-equipos')?.addEventListener('change', (e) => {
+          this.configuracion.sortearEquipos = (e.target as HTMLInputElement).checked;
+        });
+
+        // Botones principales
+        document.getElementById('generar-preview')?.addEventListener('click', () => {
+          this.generarVistaPreviaCompleta();
+        });
+
+        document.getElementById('generar-grupos')?.addEventListener('click', () => {
+          this.mostrarModalConfirmacion();
+        });
+
+        document.getElementById('reset-config')?.addEventListener('click', () => {
+          this.resetearConfiguracion();
+        });
+
+        // Modal
+        document.getElementById('cancelar-generacion')?.addEventListener('click', () => {
+          this.cerrarModal();
+        });
+
+        document.getElementById('confirmar-generacion')?.addEventListener('click', () => {
+          this.generarGruposFinales();
+        });
+      }
+
+      private actualizarEstadisticas(): void {
+        const total = this.jugadores.length;
+        const conEquipo = this.jugadores.filter(j => j.equipo).length;
+        const sinEquipo = total - conEquipo;
+
+        document.getElementById('total-jugadores')!.textContent = total.toString();
+        document.getElementById('con-equipo')!.textContent = conEquipo.toString();
+        document.getElementById('sin-equipo')!.textContent = sinEquipo.toString();
+
+        this.configuracion.totalJugadores = conEquipo;
+      }
+
+      private cambiarModo(): void {
+        const automatico = document.getElementById('config-automatico')!;
+        const manual = document.getElementById('config-manual')!;
+
+        if (this.configuracion.modo === 'automatico') {
+          automatico.classList.remove('hidden');
+          manual.classList.add('hidden');
+          this.calcularConfiguracionAutomatica();
+        } else {
+          automatico.classList.add('hidden');
+          manual.classList.remove('hidden');
+          this.generarConfiguracionManual();
+        }
+      }
+
+      private calcularConfiguracionAutomatica(): void {
+        const totalJugadores = this.configuracion.totalJugadores;
+        const tamanoPreferido = parseInt((document.getElementById('tamano-preferido') as HTMLSelectElement).value);
+        const clasificadosPorGrupo = parseInt((document.getElementById('clasificados-auto') as HTMLSelectElement).value);
+
+        if (totalJugadores === 0) {
+          this.configuracion.grupos = [];
+          this.actualizarResumen();
+          return;
+        }
+
+        const grupos: ConfiguracionGrupo[] = [];
+
+        // Configuraciones optimizadas para ciertos números de jugadores
+        if (totalJugadores === 9) {
+          // 9 jugadores: 3 grupos perfectos de 3 jugadores cada uno
+          for (let i = 0; i < 3; i++) {
+            grupos.push({
+              numeroGrupo: i + 1,
+              jugadores: 3,
+              clasificados: clasificadosPorGrupo
+            });
+          }
+        } else if (totalJugadores === 10) {
+          // 10 jugadores: 2 grupos de 3 y 1 grupo de 4
+          grupos.push({ numeroGrupo: 1, jugadores: 3, clasificados: clasificadosPorGrupo });
+          grupos.push({ numeroGrupo: 2, jugadores: 3, clasificados: clasificadosPorGrupo });
+          grupos.push({ numeroGrupo: 3, jugadores: 4, clasificados: clasificadosPorGrupo });
+        } else if (totalJugadores === 11) {
+          // 11 jugadores: 2 grupos de 4 y 1 grupo de 3
+          grupos.push({ numeroGrupo: 1, jugadores: 4, clasificados: clasificadosPorGrupo });
+          grupos.push({ numeroGrupo: 2, jugadores: 4, clasificados: clasificadosPorGrupo });
+          grupos.push({ numeroGrupo: 3, jugadores: 3, clasificados: clasificadosPorGrupo });
+        } else if (totalJugadores === 12) {
+          // 12 jugadores: 3 grupos perfectos de 4 jugadores cada uno
+          for (let i = 0; i < 3; i++) {
+            grupos.push({
+              numeroGrupo: i + 1,
+              jugadores: 4,
+              clasificados: clasificadosPorGrupo
+            });
+          }
+        } else {
+          // Lógica general para otros números de jugadores
+          const numGruposIdeal = Math.round(totalJugadores / tamanoPreferido);
+          const jugadoresPorGrupo = Math.floor(totalJugadores / numGruposIdeal);
+          const jugadoresExtra = totalJugadores % numGruposIdeal;
+
+          for (let i = 0; i < numGruposIdeal; i++) {
+            grupos.push({
+              numeroGrupo: i + 1,
+              jugadores: jugadoresPorGrupo + (i < jugadoresExtra ? 1 : 0),
+              clasificados: clasificadosPorGrupo
+            });
+          }
+        }
+
+        this.configuracion.grupos = grupos;
+        this.configuracion.totalClasificados = grupos.reduce((sum, g) => sum + g.clasificados, 0);
+        this.actualizarResumen();
+      }
+
+      private generarConfiguracionManual(): void {
+        const numGrupos = parseInt((document.getElementById('num-grupos') as HTMLInputElement).value);
+        const totalJugadores = this.configuracion.totalJugadores;
+
+        if (totalJugadores === 0 || numGrupos === 0) {
+          this.configuracion.grupos = [];
+          this.actualizarResumen();
+          return;
+        }
+
+        const gruposConfig = document.getElementById('grupos-config')!;
+        gruposConfig.innerHTML = '';
+
+        // Distribución base
+        const jugadoresPorGrupo = Math.floor(totalJugadores / numGrupos);
+        const jugadoresExtra = totalJugadores % numGrupos;
+
+        const grupos: ConfiguracionGrupo[] = [];
+
+        for (let i = 0; i < numGrupos; i++) {
+          const jugadores = jugadoresPorGrupo + (i < jugadoresExtra ? 1 : 0);
+          grupos.push({
+            numeroGrupo: i + 1,
+            jugadores: jugadores,
+            clasificados: Math.min(1, jugadores) // Default 1 clasificado
+          });
+
+          // Crear UI para cada grupo
+          const grupoDiv = document.createElement('div');
+          grupoDiv.className = 'group-preview';
+          grupoDiv.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+              <h5 class="font-semibold">Grupo ${i + 1}</h5>
+              <span class="text-sm text-gray-400">${jugadores} jugadores</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Jugadores</label>
+                <input type="number" 
+                       value="${jugadores}" 
+                       min="2" 
+                       max="${totalJugadores}"
+                       data-grupo="${i}"
+                       data-tipo="jugadores"
+                       class="input w-full text-sm">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1">Clasificados</label>
+                <input type="number" 
+                       value="1" 
+                       min="1" 
+                       max="${jugadores - 1}"
+                       data-grupo="${i}"
+                       data-tipo="clasificados"
+                       class="input w-full text-sm">
+              </div>
+            </div>
+          `;
+          gruposConfig.appendChild(grupoDiv);
+        }
+
+        // Agregar eventos a los inputs
+        gruposConfig.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', (e) => {
+            this.actualizarGrupoManual(e.target as HTMLInputElement);
+          });
+        });
+
+        this.configuracion.grupos = grupos;
+        this.actualizarClasificados();
+      }
+
+      private actualizarGrupoManual(input: HTMLInputElement): void {
+        const grupoIndex = parseInt(input.dataset.grupo!);
+        const tipo = input.dataset.tipo!;
+        const valor = parseInt(input.value);
+
+        if (tipo === 'jugadores') {
+          this.configuracion.grupos[grupoIndex].jugadores = valor;
+          // Ajustar clasificados si es necesario
+          const maxClasificados = Math.max(1, valor - 1);
+          this.configuracion.grupos[grupoIndex].clasificados = Math.min(
+            this.configuracion.grupos[grupoIndex].clasificados,
+            maxClasificados
+          );
+        } else if (tipo === 'clasificados') {
+          this.configuracion.grupos[grupoIndex].clasificados = valor;
+        }
+
+        this.actualizarClasificados();
+        this.validarDistribucion();
+      }
+
+      private actualizarClasificados(): void {
+        this.configuracion.totalClasificados = this.configuracion.grupos.reduce(
+          (sum, g) => sum + g.clasificados, 0
+        );
+
+        const totalClasificadosInput = document.getElementById('total-clasificados') as HTMLInputElement;
+        if (totalClasificadosInput) {
+          totalClasificadosInput.value = this.configuracion.totalClasificados.toString();
+        }
+
+        this.actualizarResumen();
+      }
+
+      private validarDistribucion(): boolean {
+        const totalAsignados = this.configuracion.grupos.reduce((sum, g) => sum + g.jugadores, 0);
+        const esValido = totalAsignados === this.configuracion.totalJugadores;
+
+        const generarBtn = document.getElementById('generar-grupos') as HTMLButtonElement;
+        generarBtn.disabled = !esValido || this.configuracion.grupos.length === 0;
+
+        return esValido;
+      }
+
+      private actualizarResumen(): void {
+        const config = this.configuracion;
+        
+        document.getElementById('resumen-jugadores')!.textContent = config.totalJugadores.toString();
+        document.getElementById('resumen-grupos')!.textContent = config.grupos.length.toString();
+        
+        if (config.grupos.length > 0) {
+          const minJugadores = Math.min(...config.grupos.map(g => g.jugadores));
+          const maxJugadores = Math.max(...config.grupos.map(g => g.jugadores));
+          const porGrupo = minJugadores === maxJugadores ? 
+            minJugadores.toString() : 
+            `${minJugadores}-${maxJugadores}`;
+          
+          document.getElementById('resumen-por-grupo')!.textContent = porGrupo;
+          document.getElementById('resumen-clasificados')!.textContent = config.totalClasificados.toString();
+          
+          // Calcular partidos
+          const partidosPorGrupo = config.grupos.map(g => {
+            const partidos = (g.jugadores * (g.jugadores - 1)) / 2;
+            return config.idaVuelta ? partidos * 2 : partidos;
+          });
+          
+          const minPartidos = Math.min(...partidosPorGrupo);
+          const maxPartidos = Math.max(...partidosPorGrupo);
+          const partidosTexto = minPartidos === maxPartidos ? 
+            minPartidos.toString() : 
+            `${minPartidos}-${maxPartidos}`;
+          
+          document.getElementById('resumen-partidos')!.textContent = partidosTexto;
+          document.getElementById('resumen-total-partidos')!.textContent = 
+            partidosPorGrupo.reduce((sum, p) => sum + p, 0).toString();
+        } else {
+          document.getElementById('resumen-por-grupo')!.textContent = '-';
+          document.getElementById('resumen-clasificados')!.textContent = '-';
+          document.getElementById('resumen-partidos')!.textContent = '-';
+          document.getElementById('resumen-total-partidos')!.textContent = '-';
+        }
+
+        this.validarDistribucion();
+      }
+
+      private generarVistaPreviaCompleta(): void {
+        const preview = document.getElementById('preview-grupos')!;
+        
+        if (this.configuracion.grupos.length === 0) {
+          preview.innerHTML = '<p class="text-gray-400 text-center">No hay configuración de grupos</p>';
+          return;
+        }
+
+        preview.innerHTML = this.configuracion.grupos.map(grupo => `
+          <div class="group-preview">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-semibold text-white">Grupo ${grupo.numeroGrupo}</h4>
+              <div class="text-sm text-gray-400">
+                ${grupo.jugadores} jugadores → ${grupo.clasificados} clasifican
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="text-gray-400">Partidos: ${this.calcularPartidos(grupo.jugadores)}</div>
+              <div class="text-gray-400">Eliminados: ${grupo.jugadores - grupo.clasificados}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      private calcularPartidos(jugadores: number): number {
+        const partidos = (jugadores * (jugadores - 1)) / 2;
+        return this.configuracion.idaVuelta ? partidos * 2 : partidos;
+      }
+
+      private mostrarModalConfirmacion(): void {
+        const modal = document.getElementById('modal-confirmacion')!;
+        const contenido = document.getElementById('confirmacion-contenido')!;
+
+        contenido.innerHTML = `
+          <div class="text-center space-y-4">
+            <div class="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto">
+              <span class="text-2xl">🚀</span>
+            </div>
+            <div>
+              <p class="text-lg font-semibold mb-2">¿Generar ${this.configuracion.grupos.length} grupos?</p>
+              <p class="text-sm text-gray-400">Esta acción creará los grupos con la configuración actual</p>
+            </div>
+            <div class="bg-gray-900/50 rounded-lg p-4 text-left">
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span>Jugadores:</span>
+                  <span class="text-blue-400">${this.configuracion.totalJugadores}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Grupos:</span>
+                  <span class="text-green-400">${this.configuracion.grupos.length}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Clasificados:</span>
+                  <span class="text-yellow-400">${this.configuracion.totalClasificados}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Ida y vuelta:</span>
+                  <span class="text-purple-400">${this.configuracion.idaVuelta ? 'Sí' : 'No'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+      }
+
+      private cerrarModal(): void {
+        document.getElementById('modal-confirmacion')!.classList.add('hidden');
+      }
+
+      private async generarGruposFinales(): Promise<void> {
+        try {
+          // Aquí iría la lógica para generar los grupos reales
+          console.log('Generando grupos con configuración:', this.configuracion);
+          
+          // Guardar configuración en base de datos
+          await this.guardarConfiguracionEnDB();
+          
+          this.cerrarModal();
+          
+          // Mostrar mensaje de éxito
+          const successDiv = document.createElement('div');
+          successDiv.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+          successDiv.textContent = '✅ Grupos generados exitosamente';
+          document.body.appendChild(successDiv);
+          
+          setTimeout(() => {
+            document.body.removeChild(successDiv);
+            // Redirigir a la página de grupos
+            window.location.href = '/grupos-avanzados';
+          }, 2000);
+          
+        } catch (error) {
+          console.error('Error al generar grupos:', error);
+        }
+      }
+
+      private resetearConfiguracion(): void {
+        if (confirm('¿Estás seguro de que quieres resetear toda la configuración?')) {
+          this.configuracion = {
+            modo: 'automatico',
+            grupos: [],
+            idaVuelta: false,
+            sortearEquipos: true,
+            totalJugadores: this.configuracion.totalJugadores,
+            totalClasificados: 0
+          };
+
+          // Resetear UI
+          (document.querySelector('input[value="automatico"]') as HTMLInputElement).checked = true;
+          (document.getElementById('ida-vuelta') as HTMLInputElement).checked = false;
+          (document.getElementById('sorteo-equipos') as HTMLInputElement).checked = true;
+          
+          this.cambiarModo();
+          this.calcularConfiguracionAutomatica();
+        }
+      }
+    }
+
+    // Inicializar cuando se carga la página
+    document.addEventListener('DOMContentLoaded', () => {
+      new ConfiguradorGrupos();
+    });
+  </script>
+</Layout>

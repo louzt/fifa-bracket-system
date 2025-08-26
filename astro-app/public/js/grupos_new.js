@@ -265,9 +265,6 @@ async function registrarPartidoGrupo(e) {
         formPartidoGrupo.reset();
         modalPartidoGrupo.classList.add('hidden');
         
-        // Verificar si todos los partidos han sido jugados para generar eliminatorias automáticamente
-        await verificarGenerarEliminatorias();
-        
         // Recargar grupos para mostrar el nuevo partido y estadísticas actualizadas
         setTimeout(() => cargarGrupos(), 500); // Pequeño retraso para asegurar que la BD se actualice
     }
@@ -419,13 +416,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Al cargar la página, primero sincronizar datos y luego cargar los grupos
-        mostrarMensaje('info', 'Sincronizando datos de grupos...');
-        await sincronizarDatos(); // Sincronizar primero para asegurar datos actualizados
+        // Al cargar la página, primero cargar los grupos y luego sincronizar
         await cargarGrupos();
-        
-        // Verificar si se pueden generar eliminatorias automáticamente
-        await verificarGenerarEliminatorias();
         
         // Botón de actualizar datos
         const btnActualizarGrupos = document.getElementById('btnActualizarGrupos');

@@ -94,68 +94,30 @@ async function cargarEliminatorias() {
         // - Clasificatoria: Segundos lugares restantes juegan entre sí
         // - Semifinal 2: 1° Grupo B vs Ganador Clasificatoria
         
-        // Determinar la estructura del torneo basada en los datos
-        console.log("Detectando estructura del torneo...");
+        // Para este caso específico, forzamos a detectar como torneo de 3 grupos
+        // ya que sabemos que esa es la estructura correcta
+        const tieneEstructuraCuartos = false; // Forzamos a false para ignorar la estructura de cuartos
+        const esTorneoTresGrupos = true; // Forzamos a true para usar estructura de 3 grupos
         
-        // Verificar la estructura real para depurar
-        console.log("Propiedades del objeto eliminatorias:", Object.keys(elim));
+        console.log("Tipo de torneo: Torneo de 3 grupos (configuración forzada)");
         
-        // Verificar si es la estructura correcta con nuestro ID especial
-        const esEstructuraCorrecta = elim._id === "ElIMinAtOriasNuevas";
-        console.log("¿Es estructura correcta con ID especial?", esEstructuraCorrecta);
-        
-        // Detectar si tenemos estructura con clasificatoria (torneo de 3 grupos)
-        const tieneClasificatoria = elim.hasOwnProperty('clasificatoria');
-        // Detectar si tenemos estructura con cuartos (torneo de 4+ grupos)
-        const tieneCuartos = elim.hasOwnProperty('cuartos1');
-        
-        // Si estamos usando la estructura incorrecta (con cuartos), mostrar un mensaje en consola
-        if (tieneCuartos && !tieneClasificatoria) {
-            console.warn("ADVERTENCIA: Se detectó una estructura con cuartos de final pero deberíamos estar usando clasificatoria para un torneo de 3 grupos");
-            console.warn("Por favor recarga la página o simula un nuevo torneo para corregir la estructura");
-        }
-        
-        // Forzar estructura correcta basada en los grupos existentes
-        // Sabemos que hay 3 grupos en el sistema, por lo que deberíamos usar la estructura con clasificatoria
-        const deberiaSerClasificatoria = true;
-        
-        // Variable necesaria para la compatibilidad con el código existente
-        // Siempre forzamos esCuartos a false para manejar correctamente la estructura
+        // Variable que usaremos para compatibilidad con código existente
         const esCuartos = false;
         
-        console.log("Decisión final de estructura:", {
-            tieneClasificatoria,
-            tieneCuartos,
-            deberiaSerClasificatoria,
-            esCuartos,
-            esEstructuraCorrecta
-        });
-        
-        console.log("Estructura detectada:", {
-            tieneClasificatoria,
-            tieneCuartos,
-            esCuartos
-        });
-        
-        // Primero verificamos si tenemos la estructura especial con ID correcto
-        if (esEstructuraCorrecta) {
-            console.log("Usando estructura específica con ID ElIMinAtOriasNuevas");
-            renderizarEstructuraClasificatoria(elim);
-        } 
-        // Si no es la estructura especial pero tiene clasificatoria, usar la estructura de clasificatoria
-        else if (tieneClasificatoria) {
-            console.log("Usando estructura con clasificatoria");
-            renderizarEstructuraClasificatoria(elim);
-        }
-        // Si no tiene clasificatoria pero debería tenerla, usar modo de compatibilidad
-        else if (tieneCuartos && deberiaSerClasificatoria) {
-            console.log("Usando modo de compatibilidad para convertir cuartos en clasificatoria");
-            renderizarEstructuraCompatibilidad(elim);
-        }
-        // En otros casos, usar la estructura normal
-        else {
-            console.log("Usando estructura estándar del servidor");
-            renderizarEstructura(elim, { tieneClasificatoria, tieneCuartos, esCuartos });
+        // Si tenemos cuartos, actualizar semifinales desde los cuartos
+        if (tieneEstructuraCuartos) {
+            console.log("Estructura de eliminatorias con cuartos detectada");
+            
+            // Actualizamos semifinal1 y semifinal2 con la información de los cuartos
+            if (!elim.semifinal1.jugador1 && !elim.semifinal1.jugador2) {
+                elim.semifinal1.jugador1 = elim.cuartos1.jugador1;
+                elim.semifinal1.jugador2 = elim.cuartos2.jugador1;
+            }
+            
+            if (!elim.semifinal2.jugador1 && !elim.semifinal2.jugador2) {
+                elim.semifinal2.jugador1 = elim.cuartos3.jugador1;
+                elim.semifinal2.jugador2 = elim.cuartos4.jugador1;
+            }
         }
         
         mensajeEliminatorias.classList.add('hidden');
@@ -200,7 +162,6 @@ async function cargarEliminatorias() {
         }
         
         if (elim.semifinal1.resultado) {
-            console.log("Resultado de semifinal1:", elim.semifinal1.resultado);
             // Guardamos las posiciones actuales antes de sobrescribirlas
             const posicion1 = semifinal1Goles1.textContent;
             const posicion2 = semifinal1Goles2.textContent;
@@ -230,61 +191,27 @@ async function cargarEliminatorias() {
     }
     
     // Actualizar clasificatoria
-    if (elim.clasificatoria || tieneCuartos) {
+    if (elim.clasificatoria || esCuartos) {
         console.log("Actualizando clasificatoria");
         
-        // Si tenemos una fase clasificatoria explícita
+        // Estamos en una estructura de torneo de 3 grupos
+        // La clasificatoria ya debería tener los jugadores correctos asignados desde el servidor
         if (elim.clasificatoria && elim.clasificatoria.jugador1 && elim.clasificatoria.jugador2) {
-            console.log("Usando estructura con clasificatoria explícita");
+            console.log("Mostrando datos de la clasificatoria del torneo de 3 grupos");
+            console.log("Jugador 1:", elim.clasificatoria.jugador1.nombre, 
+                        "Grupo:", elim.clasificatoria.jugador1.grupo, 
+                        "Posición:", elim.clasificatoria.jugador1.posicion);
+            console.log("Jugador 2:", elim.clasificatoria.jugador2.nombre, 
+                        "Grupo:", elim.clasificatoria.jugador2.grupo, 
+                        "Posición:", elim.clasificatoria.jugador2.posicion);
+                        
+            // Actualizar la interfaz con los datos de los jugadores
+            clasificatoriaJugador1.textContent = elim.clasificatoria.jugador1.nombre;
+            clasificatoriaJugador2.textContent = elim.clasificatoria.jugador2.nombre;
             
-            // Jugador 1
-            clasificatoriaJugador1.textContent = elim.clasificatoria.jugador1.nombre || "Pendiente";
+            // Añadir información de sus grupos
             clasificatoriaGrupo1.textContent = elim.clasificatoria.jugador1.grupo || '';
-            if (clasificatoriaGoles1.textContent === "-" && elim.clasificatoria.jugador1.posicion) {
-                clasificatoriaGoles1.textContent = elim.clasificatoria.jugador1.posicion;
-            }
-            
-            // Jugador 2
-            clasificatoriaJugador2.textContent = elim.clasificatoria.jugador2.nombre || "Pendiente";
             clasificatoriaGrupo2.textContent = elim.clasificatoria.jugador2.grupo || '';
-            if (clasificatoriaGoles2.textContent === "-" && elim.clasificatoria.jugador2.posicion) {
-                clasificatoriaGoles2.textContent = elim.clasificatoria.jugador2.posicion;
-            }
-        }
-        // Si tenemos estructura con cuartos pero no clasificatoria (modo de compatibilidad)
-        else if (tieneCuartos) {
-            console.log("MODO DE COMPATIBILIDAD: Creando clasificatoria a partir de cuartos");
-            // Recolectar todos los segundos clasificados de los grupos
-            const segundosClasificados = [];
-            
-            // Recolectar todos los jugadores con posición=2 de los cuartos
-            if (elim.cuartos1 && elim.cuartos1.jugador2) {
-                segundosClasificados.push(elim.cuartos1.jugador2);
-                console.log("Encontrado segundo lugar en cuartos1:", elim.cuartos1.jugador2.nombre);
-            }
-            if (elim.cuartos2 && elim.cuartos2.jugador2) {
-                segundosClasificados.push(elim.cuartos2.jugador2);
-                console.log("Encontrado segundo lugar en cuartos2:", elim.cuartos2.jugador2.nombre);
-            }
-            if (elim.cuartos3 && elim.cuartos3.jugador2) {
-                segundosClasificados.push(elim.cuartos3.jugador2);
-                console.log("Encontrado segundo lugar en cuartos3:", elim.cuartos3.jugador2.nombre);
-            }
-            if (elim.cuartos4 && elim.cuartos4.jugador2) {
-                segundosClasificados.push(elim.cuartos4.jugador2);
-                console.log("Encontrado segundo lugar en cuartos4:", elim.cuartos4.jugador2.nombre);
-            }
-            
-            console.log(`Total de segundos lugares encontrados: ${segundosClasificados.length}`);
-            
-            // Seleccionar los dos mejores segundos clasificados (normalmente los dos primeros)
-            if (segundosClasificados.length >= 2) {
-                clasificatoriaJugador1.textContent = segundosClasificados[0].nombre;
-                clasificatoriaJugador2.textContent = segundosClasificados[1].nombre;
-                
-                // Añadir información de sus grupos
-                clasificatoriaGrupo1.textContent = segundosClasificados[0].grupo || '';
-                clasificatoriaGrupo2.textContent = segundosClasificados[1].grupo || '';
                 
                 // Mostrar posición en el grupo
                 if (segundosClasificados[0].posicion) {
@@ -317,22 +244,17 @@ async function cargarEliminatorias() {
             
         } else if (elim.clasificatoria && elim.clasificatoria.jugador1) {
             // Si hay información específica de clasificatoria en la estructura
-            clasificatoriaJugador1.textContent = elim.clasificatoria.jugador1.nombre || "Pendiente";
+            clasificatoriaJugador1.textContent = elim.clasificatoria.jugador1.nombre;
             
             // Añadir información del grupo y posición
             if (clasificatoriaGrupo1) {
                 console.log("Clasificatoria J1 completo:", elim.clasificatoria.jugador1);
-                // Intentamos obtener el grupo directamente del jugador
-                let grupo = '';
-                if (elim.clasificatoria.jugador1.grupo) {
-                    grupo = elim.clasificatoria.jugador1.grupo;
-                }
-                clasificatoriaGrupo1.textContent = grupo || 'Grupo Desconocido';
+                const grupo = elim.clasificatoria.jugador1.grupo || '';
+                clasificatoriaGrupo1.textContent = grupo;
                 
                 // Mostrar posición en el grupo
                 if (elim.clasificatoria.jugador1.posicion) {
                     clasificatoriaGoles1.textContent = elim.clasificatoria.jugador1.posicion;
-                    console.log("Asignando posición al jugador 1 clasificatoria:", elim.clasificatoria.jugador1.posicion);
                 }
             }
         } else {
@@ -345,47 +267,23 @@ async function cargarEliminatorias() {
         // El jugador 2 de la clasificatoria ya se manejó en el bloque anterior si estamos en estructura de cuartos
         if (!esCuartos && elim.clasificatoria && elim.clasificatoria.jugador2) {
             // Si tenemos el jugador 2 definido específicamente en la clasificatoria
-            clasificatoriaJugador2.textContent = elim.clasificatoria.jugador2.nombre || "Pendiente";
+            clasificatoriaJugador2.textContent = elim.clasificatoria.jugador2.nombre;
             
             // Añadir información del grupo y posición
             if (clasificatoriaGrupo2) {
                 console.log("Clasificatoria J2 completo:", elim.clasificatoria.jugador2);
-                // Intentamos obtener el grupo directamente del jugador
-                let grupo = '';
-                if (elim.clasificatoria.jugador2.grupo) {
-                    grupo = elim.clasificatoria.jugador2.grupo;
-                }
-                clasificatoriaGrupo2.textContent = grupo || 'Grupo Desconocido';
+                const grupo = elim.clasificatoria.jugador2.grupo || '';
+                clasificatoriaGrupo2.textContent = grupo;
                 
                 // Mostrar posición en el grupo
                 if (elim.clasificatoria.jugador2.posicion) {
                     clasificatoriaGoles2.textContent = elim.clasificatoria.jugador2.posicion;
-                    console.log("Asignando posición al jugador 2 clasificatoria:", elim.clasificatoria.jugador2.posicion);
                 }
             }
         } else if (clasificatoriaJugador2.textContent === "Pendiente" || clasificatoriaJugador2.textContent === "") {
             // Si aún no se ha asignado un valor al jugador 2 de clasificatoria
             clasificatoriaJugador2.textContent = "Pendiente";
             if (clasificatoriaGrupo2) clasificatoriaGrupo2.textContent = "Pendiente";
-        }
-        
-        // Asegurarnos que se muestran las posiciones correctamente
-        if (elim.clasificatoria && elim.clasificatoria.jugador1) {
-            if (!clasificatoriaGoles1.textContent || clasificatoriaGoles1.textContent === "-") {
-                console.log("Actualizando posición jugador 1 clasificatoria:", elim.clasificatoria.jugador1.posicion);
-                if (elim.clasificatoria.jugador1.posicion) {
-                    clasificatoriaGoles1.textContent = elim.clasificatoria.jugador1.posicion;
-                }
-            }
-        }
-        
-        if (elim.clasificatoria && elim.clasificatoria.jugador2) {
-            if (!clasificatoriaGoles2.textContent || clasificatoriaGoles2.textContent === "-") {
-                console.log("Actualizando posición jugador 2 clasificatoria:", elim.clasificatoria.jugador2.posicion);
-                if (elim.clasificatoria.jugador2.posicion) {
-                    clasificatoriaGoles2.textContent = elim.clasificatoria.jugador2.posicion;
-                }
-            }
         }
         
         if (elim.clasificatoria && elim.clasificatoria.resultado) {
@@ -449,50 +347,70 @@ async function cargarEliminatorias() {
         
         // Para el jugador 2 de la semifinal 2 (ganador de clasificatoria o segundo jugador)
         if (elim.clasificatoria && elim.clasificatoria.resultado) {
-            console.log("Procesando resultado de clasificatoria para semifinal 2");
             // Si ya se jugó la clasificatoria, mostramos el nombre del ganador
             const golesClasificatoria1 = elim.clasificatoria.resultado.golesJugador1;
             const golesClasificatoria2 = elim.clasificatoria.resultado.golesJugador2;
-            
-            console.log(`Resultado clasificatoria: ${golesClasificatoria1}-${golesClasificatoria2}`);
-            console.log("Jugadores clasificatoria:", elim.clasificatoria.jugador1, elim.clasificatoria.jugador2);
             
             // Determinar el ganador según los goles
             let ganadorClasificatoria;
             let infoGanadorClasificatoria = "";
             
-            // Determinar el jugador ganador directamente de los datos en memoria
             if (golesClasificatoria1 > golesClasificatoria2) {
                 // Ganó el jugador 1
-                if (elim.clasificatoria.jugador1) {
-                    ganadorClasificatoria = elim.clasificatoria.jugador1.nombre;
-                    infoGanadorClasificatoria = elim.clasificatoria.jugador1.grupo || '';
-                    console.log("Ganador clasificatoria: Jugador 1 -", ganadorClasificatoria, infoGanadorClasificatoria);
+                // Buscar el jugador completo en caso de estar en estructura de cuartos
+                let jugador = null;
+                if (esCuartos && clasificatoriaJugador1.textContent) {
+                    const nombreGanador = clasificatoriaJugador1.textContent;
+                    // Buscar el jugador en los cuartos
+                    ['cuartos1', 'cuartos2', 'cuartos3', 'cuartos4'].forEach(cuartoKey => {
+                        if (elim[cuartoKey]) {
+                            if (elim[cuartoKey].jugador1 && elim[cuartoKey].jugador1.nombre === nombreGanador) {
+                                jugador = elim[cuartoKey].jugador1;
+                            } else if (elim[cuartoKey].jugador2 && elim[cuartoKey].jugador2.nombre === nombreGanador) {
+                                jugador = elim[cuartoKey].jugador2;
+                            }
+                        }
+                    });
                     
-                    // Asignar al jugador ganador a semifinal 2
-                    if (elim.semifinal2) {
-                        elim.semifinal2.jugador2 = elim.clasificatoria.jugador1;
+                    if (jugador) {
+                        ganadorClasificatoria = jugador.nombre;
+                        infoGanadorClasificatoria = jugador.grupo || '';
+                    } else {
+                        ganadorClasificatoria = clasificatoriaJugador1.textContent;
+                        infoGanadorClasificatoria = clasificatoriaGrupo1.textContent;
                     }
                 } else {
-                    ganadorClasificatoria = clasificatoriaJugador1.textContent;
-                    infoGanadorClasificatoria = clasificatoriaGrupo1.textContent;
-                    console.log("Ganador clasificatoria (desde DOM): Jugador 1 -", ganadorClasificatoria);
+                    ganadorClasificatoria = elim.clasificatoria.jugador1.nombre;
+                    const grupoGanador = elim.clasificatoria.jugador1.grupo || '';
+                    infoGanadorClasificatoria = grupoGanador;
                 }
             } else {
                 // Ganó el jugador 2
-                if (elim.clasificatoria.jugador2) {
-                    ganadorClasificatoria = elim.clasificatoria.jugador2.nombre;
-                    infoGanadorClasificatoria = elim.clasificatoria.jugador2.grupo || '';
-                    console.log("Ganador clasificatoria: Jugador 2 -", ganadorClasificatoria, infoGanadorClasificatoria);
+                let jugador = null;
+                if (esCuartos && clasificatoriaJugador2.textContent) {
+                    const nombreGanador = clasificatoriaJugador2.textContent;
+                    // Buscar el jugador en los cuartos
+                    ['cuartos1', 'cuartos2', 'cuartos3', 'cuartos4'].forEach(cuartoKey => {
+                        if (elim[cuartoKey]) {
+                            if (elim[cuartoKey].jugador1 && elim[cuartoKey].jugador1.nombre === nombreGanador) {
+                                jugador = elim[cuartoKey].jugador1;
+                            } else if (elim[cuartoKey].jugador2 && elim[cuartoKey].jugador2.nombre === nombreGanador) {
+                                jugador = elim[cuartoKey].jugador2;
+                            }
+                        }
+                    });
                     
-                    // Asignar al jugador ganador a semifinal 2
-                    if (elim.semifinal2) {
-                        elim.semifinal2.jugador2 = elim.clasificatoria.jugador2;
+                    if (jugador) {
+                        ganadorClasificatoria = jugador.nombre;
+                        infoGanadorClasificatoria = jugador.grupo || '';
+                    } else {
+                        ganadorClasificatoria = clasificatoriaJugador2.textContent;
+                        infoGanadorClasificatoria = clasificatoriaGrupo2.textContent;
                     }
                 } else {
-                    ganadorClasificatoria = clasificatoriaJugador2.textContent;
-                    infoGanadorClasificatoria = clasificatoriaGrupo2.textContent;
-                    console.log("Ganador clasificatoria (desde DOM): Jugador 2 -", ganadorClasificatoria);
+                    ganadorClasificatoria = elim.clasificatoria.jugador2.nombre;
+                    const grupoGanador = elim.clasificatoria.jugador2.grupo || '';
+                    infoGanadorClasificatoria = grupoGanador;
                 }
             }
             
@@ -555,14 +473,8 @@ async function cargarEliminatorias() {
             if (semifinal2Grupo2) {
                 if (elim.semifinal2.jugador2.grupo) {
                     semifinal2Grupo2.textContent = elim.semifinal2.jugador2.grupo;
-                    
-                    // Si hay información de posición, mostrarla
-                    if (elim.semifinal2.jugador2.posicion && semifinal2Goles2.textContent === "-") {
-                        console.log("Asignando posición al jugador 2 semifinal2:", elim.semifinal2.jugador2.posicion);
-                        semifinal2Goles2.textContent = elim.semifinal2.jugador2.posicion;
-                    }
                 } else {
-                    semifinal2Grupo2.textContent = 'Ganador Clasificatoria';
+                    semifinal2Grupo2.textContent = 'Pendiente';
                 }
             }
         } else if (esCuartos && clasificatoriaJugador1.textContent !== "Pendiente" && clasificatoriaJugador2.textContent !== "Pendiente") {
@@ -615,121 +527,59 @@ async function cargarEliminatorias() {
     // Actualizar final
     if (elim.final) {
         if (elim.semifinal1 && elim.semifinal1.resultado) {
-            // Verificar que los jugadores no sean null antes de acceder a sus propiedades
-            if (elim.semifinal1.jugador1 && elim.semifinal1.jugador2) {
-                const esGanador1SF1 = elim.semifinal1.resultado.golesJugador1 > elim.semifinal1.resultado.golesJugador2;
-                const ganadorSF1 = esGanador1SF1 ? 
-                    elim.semifinal1.jugador1.nombre : 
-                    elim.semifinal1.jugador2.nombre;
-                finalJugador1.textContent = ganadorSF1;
+            const esGanador1SF1 = elim.semifinal1.resultado.golesJugador1 > elim.semifinal1.resultado.golesJugador2;
+            const ganadorSF1 = esGanador1SF1 ? 
+                elim.semifinal1.jugador1.nombre : 
+                elim.semifinal1.jugador2.nombre;
+            finalJugador1.textContent = ganadorSF1;
             
-                // Actualizar grupo para final
-                const ganadorInfo = esGanador1SF1 ? 
-                    elim.semifinal1.jugador1 : 
-                    elim.semifinal1.jugador2;
-                
-                console.log("Ganador SF1 completo:", ganadorInfo);
-                
-                if (finalGrupo1) {
-                    if (ganadorInfo && ganadorInfo.grupo) {
-                        finalGrupo1.textContent = ganadorInfo.grupo;
-                        
-                        // Si tiene posición, mostrarla en los goles
-                        if (ganadorInfo.posicion && finalGoles1.textContent === "-") {
-                            finalGoles1.textContent = ganadorInfo.posicion;
-                        }
-                    } else {
-                        finalGrupo1.textContent = 'Ganador Semifinal 1';
-                }
-            }
-            } else {
-                console.log("No hay información de jugadores en semifinal1");
-                // Verificar si hay un resultado para mostrar información más útil
-                if (elim.semifinal1.resultado) {
-                    // Si hay resultado pero no jugadores asignados, intentamos reconstruir la información
-                    // desde los datos de cuartos si están disponibles
-                    if (tieneEstructuraCuartos && elim.cuartos1 && elim.cuartos1.jugador1 && elim.cuartos2 && elim.cuartos2.jugador1) {
-                        const golesJ1 = elim.semifinal1.resultado.golesJugador1;
-                        const golesJ2 = elim.semifinal1.resultado.golesJugador2;
-                        console.log(`Resultado semifinal1: ${golesJ1}-${golesJ2}`);
-                        
-                        // Determinar ganador según los goles
-                        if (golesJ1 > golesJ2) {
-                            finalJugador1.textContent = elim.cuartos1.jugador1.nombre;
-                            if (finalGrupo1) finalGrupo1.textContent = elim.cuartos1.jugador1.grupo || 'Cuartos 1';
-                        } else {
-                            finalJugador1.textContent = elim.cuartos2.jugador1.nombre;
-                            if (finalGrupo1) finalGrupo1.textContent = elim.cuartos2.jugador1.grupo || 'Cuartos 2';
-                        }
-                    } else {
-                        // Si no podemos reconstruir desde cuartos, mostramos info genérica
-                        finalJugador1.textContent = 'Ganador Semifinal 1';
-                        if (finalGrupo1) finalGrupo1.textContent = 'No identificado';
+            // Actualizar grupo para final
+            const ganadorInfo = esGanador1SF1 ? 
+                elim.semifinal1.jugador1 : 
+                elim.semifinal1.jugador2;
+            
+            console.log("Ganador SF1 completo:", ganadorInfo);
+            
+            if (finalGrupo1) {
+                if (ganadorInfo && ganadorInfo.grupo) {
+                    finalGrupo1.textContent = ganadorInfo.grupo;
+                    
+                    // Si tiene posición, mostrarla en los goles
+                    if (ganadorInfo.posicion && finalGoles1.textContent === "-") {
+                        finalGoles1.textContent = ganadorInfo.posicion;
                     }
                 } else {
-                    finalJugador1.textContent = 'Pendiente';
-                    if (finalGrupo1) finalGrupo1.textContent = 'Pendiente';
+                    finalGrupo1.textContent = 'Ganador Semifinal 1';
                 }
             }
         }
         
         if (elim.semifinal2 && elim.semifinal2.resultado) {
-            // Verificar que los jugadores no sean null antes de acceder a sus propiedades
-            if (elim.semifinal2.jugador1 && elim.semifinal2.jugador2) {
-                const esGanador1SF2 = elim.semifinal2.resultado.golesJugador1 > elim.semifinal2.resultado.golesJugador2;
-                const ganadorSF2 = esGanador1SF2 ? 
-                    elim.semifinal2.jugador1.nombre : 
-                    elim.semifinal2.jugador2.nombre;
-                finalJugador2.textContent = ganadorSF2;
+            const esGanador1SF2 = elim.semifinal2.resultado.golesJugador1 > elim.semifinal2.resultado.golesJugador2;
+            const ganadorSF2 = esGanador1SF2 ? 
+                elim.semifinal2.jugador1.nombre : 
+                elim.semifinal2.jugador2.nombre;
+            finalJugador2.textContent = ganadorSF2;
             
-                // Actualizar grupo para final
-                const ganadorInfo = esGanador1SF2 ? 
-                    elim.semifinal2.jugador1 : 
-                    elim.semifinal2.jugador2;
-                
-                console.log("Ganador SF2 completo:", ganadorInfo);
-                
-                if (finalGrupo2) {
-                    // Si el ganador tiene información de grupo, mostrarla
-                    if (ganadorInfo && ganadorInfo.grupo) {
-                        finalGrupo2.textContent = ganadorInfo.grupo;
-                        
-                        // Si tiene posición, mostrarla en los goles
-                        if (ganadorInfo.posicion && finalGoles2.textContent === "-") {
-                            finalGoles2.textContent = ganadorInfo.posicion;
-                        }
-                    } else {
-                        // Si no hay grupo o viene de clasificatoria
-                        finalGrupo2.textContent = 'Ganador Semifinal 2';
-                    }
-                }
-            } else {
-                console.log("No hay información de jugadores en semifinal2");
-                // Verificar si hay un resultado para mostrar información más útil
-                if (elim.semifinal2.resultado) {
-                    // Si hay resultado pero no jugadores asignados, intentamos reconstruir la información
-                    // desde los datos de cuartos si están disponibles
-                    if (tieneEstructuraCuartos && elim.cuartos3 && elim.cuartos3.jugador1 && elim.cuartos4 && elim.cuartos4.jugador1) {
-                        const golesJ1 = elim.semifinal2.resultado.golesJugador1;
-                        const golesJ2 = elim.semifinal2.resultado.golesJugador2;
-                        console.log(`Resultado semifinal2: ${golesJ1}-${golesJ2}`);
-                        
-                        // Determinar ganador según los goles
-                        if (golesJ1 > golesJ2) {
-                            finalJugador2.textContent = elim.cuartos3.jugador1.nombre;
-                            if (finalGrupo2) finalGrupo2.textContent = elim.cuartos3.jugador1.grupo || 'Cuartos 3';
-                        } else {
-                            finalJugador2.textContent = elim.cuartos4.jugador1.nombre;
-                            if (finalGrupo2) finalGrupo2.textContent = elim.cuartos4.jugador1.grupo || 'Cuartos 4';
-                        }
-                    } else {
-                        // Si no podemos reconstruir desde cuartos, mostramos info genérica
-                        finalJugador2.textContent = 'Ganador Semifinal 2';
-                        if (finalGrupo2) finalGrupo2.textContent = 'No identificado';
+            // Actualizar grupo para final
+            const ganadorInfo = esGanador1SF2 ? 
+                elim.semifinal2.jugador1 : 
+                elim.semifinal2.jugador2;
+            
+            console.log("Ganador SF2 completo:", ganadorInfo);
+            
+            if (finalGrupo2) {
+                // Si el ganador tiene información de grupo, mostrarla
+                if (ganadorInfo && ganadorInfo.grupo) {
+                    finalGrupo2.textContent = ganadorInfo.grupo;
+                    
+                    // Si tiene posición, mostrarla en los goles
+                    if (ganadorInfo.posicion && finalGoles2.textContent === "-") {
+                        finalGoles2.textContent = ganadorInfo.posicion;
                     }
                 } else {
-                    finalJugador2.textContent = 'Pendiente';
-                    if (finalGrupo2) finalGrupo2.textContent = 'Pendiente';
+                    // Si no hay grupo o viene de clasificatoria
+                    finalGrupo2.textContent = 'Ganador Semifinal 2';
                 }
             }
             
@@ -775,7 +625,7 @@ async function cargarEliminatorias() {
             seccionCampeon.classList.add('animate__animated', 'animate__fadeIn');
         }
     }
-} catch (error) {
+    } catch (error) {
         console.error("Error al cargar eliminatorias:", error);
         mostrarMensaje('error', 'Error al cargar las eliminatorias');
     }
@@ -785,28 +635,6 @@ async function cargarEliminatorias() {
 function abrirModalPartido(fase) {
     faseActualInput.value = fase;
     
-    // Verificar si tenemos la estructura correcta para jugar
-    if (fase === 'clasificatoria') {
-        fetchAPI('/api/eliminatorias').then(datos => {
-            const elim = datos[0];
-            if (!elim || !elim.clasificatoria) {
-                mostrarMensaje('error', 'Error en la estructura del torneo. Por favor recarga la página.');
-                console.error("Error: La estructura del torneo no contiene la fase clasificatoria");
-                return;
-            }
-            // Continuar con el juego si la estructura es correcta
-            continuarConPartido(fase);
-        }).catch(error => {
-            mostrarMensaje('error', 'Error al cargar datos. Por favor recarga la página.');
-            console.error("Error al verificar estructura:", error);
-        });
-    } else {
-        // Para otras fases, continuar directamente
-        continuarConPartido(fase);
-    }
-}
-
-function continuarConPartido(fase) {
     let titulo, jugador1, jugador2;
     
     switch (fase) {
@@ -860,33 +688,6 @@ function continuarConPartido(fase) {
     tituloModalEliminatoria.textContent = `Registrar Resultado - ${titulo}`;
     elimJugador1.textContent = jugador1;
     elimJugador2.textContent = jugador2;
-    
-    // Verificar nuevamente la estructura para casos de clasificatoria
-    if (fase === 'clasificatoria') {
-        const verifStructBtn = document.createElement('button');
-        verifStructBtn.textContent = "Verificar estructura";
-        verifStructBtn.classList.add("btn-secondary", "mt-2", "w-full");
-        verifStructBtn.onclick = async (e) => {
-            e.preventDefault();
-            const eliminatorias = await fetchAPI('/api/eliminatorias');
-            if (eliminatorias.length > 0) {
-                const elim = eliminatorias[0];
-                console.log("Estructura actual:", elim);
-                if (elim.clasificatoria) {
-                    mostrarMensaje('success', 'La estructura es correcta y contiene fase clasificatoria');
-                } else {
-                    mostrarMensaje('error', 'Error: La estructura no contiene fase clasificatoria');
-                }
-            }
-        };
-        
-        // Agregar el botón solo si no existe ya
-        const existingBtn = document.querySelector('#verifStructBtn');
-        if (!existingBtn) {
-            modalPartidoEliminatorias.querySelector('form').appendChild(verifStructBtn);
-            verifStructBtn.id = 'verifStructBtn';
-        }
-    }
     
     modalPartidoEliminatorias.classList.remove('hidden');
 }

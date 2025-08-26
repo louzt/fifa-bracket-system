@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Jugador {
+  id       String  @id @default(cuid())
+  nombre   String
+  equipo   String?
+  goles    Int     @default(0)
+  partidos Int     @default(0)
+  
+  // Relaciones
+  partidosJugador1 Partido[] @relation("Jugador1")
+  partidosJugador2 Partido[] @relation("Jugador2")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("jugadores")
+}
+
+model Torneo {
+  id           String    @id @default(cuid())
+  nombre       String
+  fechaInicio  DateTime
+  fechaFin     DateTime?
+  fase         String    @default("grupos") // grupos, eliminatorias, finalizado
+  estado       String    @default("activo") // activo, finalizado, pausado
+  configuracion String   // JSON con configuración del torneo
+  
+  // Relaciones
+  grupos       GrupoTorneo[]
+  partidos     Partido[]
+  resultadosEliminatorias String? // JSON con resultados de eliminatorias
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("torneos")
+}
+
+model GrupoTorneo {
+  id        String @id @default(cuid())
+  torneoId  String
+  nombre    String
+  jugadores String // JSON array con datos completos de jugadores
+  
+  // Relaciones
+  torneo   Torneo @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("grupos_torneo")
+}
+
+model Partido {
+  id             String    @id @default(cuid())
+  torneoId       String
+  jugador1Id     String?   // Opcional para permitir partidos dinámicos
+  jugador2Id     String?   // Opcional para permitir partidos dinámicos
+  jugadorLocal   String    // Nombre del jugador local
+  jugadorVisitante String  // Nombre del jugador visitante
+  equipoLocal    String    // Equipo del jugador local
+  equipoVisitante String   // Equipo del jugador visitante
+  golesLocal     Int?
+  golesVisitante Int?
+  jugado         Boolean   @default(false)
+  ganador        String?
+  fase           String?   // grupos, ronda-previa, clasificatoria, semifinal, final, tercer-lugar
+  grupo          String?
+  jornada        Int?
+  rondaId        String?   // Para eliminatorias (ej: "ronda-previa-1")
+  esIdaVuelta    Boolean   @default(false)
+  partidoIda     String?   // ID del partido de ida (para vuelta)
+  fechaPartido   DateTime?
+  
+  // Relaciones
+  torneo   Torneo @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  jugador1 Jugador? @relation("Jugador1", fields: [jugador1Id], references: [id])
+  jugador2 Jugador? @relation("Jugador2", fields: [jugador2Id], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("partidos")
+}
+
+model Grupo {
+  id       String @id @default(cuid())
+  nombre   String
+  jugadores String // JSON array de IDs de jugadores
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("grupos")
+}
+
+model Configuracion {
+  id    String @id @default(cuid())
+  clave String @unique
+  valor String // JSON string para configuraciones complejas
+  tipo  String @default("global") // global, torneo-especifico
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("configuracion")
+}
+
+model ConfiguracionGrupos {
+  id           String @id @default(cuid())
+  nombre       String @default("Configuración por defecto")
+  configuracion String // JSON con configuración completa
+  grupos       String // JSON con grupos generados
+  esActiva     Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("configuracion_grupos")
+}
